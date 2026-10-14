@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Baloo_Chettan_2, Dongle } from "next/font/google";
 import { cookies } from "next/headers";
 import type { ReactNode } from "react";
 import "swiper/css";
@@ -7,9 +8,24 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { THEME_COOKIE_NAME, type ThemePreference } from "@/lib/theme";
 import { GlobalStyles } from "@/styles/global-styles";
 
+const mainFont = Baloo_Chettan_2({
+  weight: "variable",
+  subsets: ["latin", "latin-ext"],
+  display: "swap",
+  variable: "--font-main",
+});
+
+const secondaryFont = Dongle({
+  weight: ["300", "400", "700"],
+  subsets: ["latin", "latin-ext"],
+  display: "swap",
+  variable: "--font-secondary",
+});
+
 export const metadata: Metadata = {
-  title: "Brasil Gravações | Início",
-  description: "Plataforma Brasil Gravações.",
+  title: "Brasil Gravações | Serigrafia criativa",
+  description:
+    "Serigrafia criativa e produção independente, com técnica, qualidade e atenção aos detalhes para criar produtos que representam cada cliente.",
 };
 
 /** Lê a preferência salva no servidor e prepara estilos e tema antes de renderizar a página. */
@@ -21,6 +37,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   return (
     <html
       lang="pt-BR"
+      className={`${mainFont.variable} ${secondaryFont.variable}`}
       data-theme={initialPreference === "system" ? undefined : initialPreference}
     >
       <body>

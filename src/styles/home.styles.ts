@@ -1,10 +1,10 @@
-import styled from "styled-components";
-import { elevation, flex, radius } from "@/styles/mixins";
-import { palette, space } from "@/styles/theme";
-import type { PaletteToken, SpaceToken } from "@/styles/theme";
+import styled from 'styled-components';
+import { elevation, flex, radius } from '@/styles/mixins';
+import { palette, space } from '@/styles/theme';
+import type { PaletteToken, SpaceToken } from '@/styles/theme';
 
 export const Page = styled.main`
-  ${flex({ direction: "column", align: "top" })}
+  ${flex({ direction: 'column', align: 'top' })}
   width: 100%;
   min-height: 100vh;
   padding: var(--padding-md-3) max(var(--padding-md-3), calc((100vw - 68rem) / 2));
@@ -18,13 +18,13 @@ export const Shell = styled.div`
 `;
 
 export const Header = styled.header`
-  ${flex({ align: "center", justify: "space-between", gap: "md-2" })}
+  ${flex({ align: 'center', justify: 'space-between', gap: 'md-2' })}
   min-height: 3rem;
   padding: var(--padding-sm-2) var(--padding-md-2);
 `;
 
 export const Brand = styled.a`
-  ${flex({ align: "center", gap: "sm-2" })}
+  ${flex({ align: 'center', gap: 'sm-2' })}
   font-size: 0.95rem;
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -35,7 +35,7 @@ export const BrandMark = styled.span`
   width: 2.25rem;
   height: 2.25rem;
   place-items: center;
-  ${radius("sm")}
+  ${radius('sm')}
   color: var(--color-primary-text);
   background: var(--color-primary);
   font-size: 0.75rem;
@@ -43,7 +43,7 @@ export const BrandMark = styled.span`
 `;
 
 export const Hero = styled.section`
-  ${flex({ direction: "column", align: "top", gap: "md-3" })}
+  ${flex({ direction: 'column', align: 'top', gap: 'md-3' })}
   max-width: 47rem;
   padding-block: var(--padding-xl-1) var(--padding-lg-3);
 
@@ -66,7 +66,7 @@ export const Title = styled.h1`
   margin: 0;
   font-size: clamp(2.5rem, 7vw, 5.5rem);
   font-weight: 600;
-  letter-spacing: -0.065em;
+  letter-spacing: 0.01em;
   line-height: 0.98;
   text-wrap: balance;
 `;
@@ -94,8 +94,8 @@ export const Card = styled.section`
   padding: var(--padding-lg-2);
   border: 1px solid var(--color-border);
   background: var(--color-surface);
-  ${radius("lg")}
-  ${elevation("low")}
+  ${radius('lg')}
+  ${elevation('low')}
 
   @media (max-width: 480px) {
     padding: var(--padding-md-3);
@@ -103,7 +103,7 @@ export const Card = styled.section`
 `;
 
 export const CardHeading = styled.div`
-  ${flex({ align: "top", justify: "space-between", gap: "md-1" })}
+  ${flex({ align: 'top', justify: 'space-between', gap: 'md-1' })}
   margin-bottom: var(--margin-lg-2);
 `;
 
@@ -115,13 +115,13 @@ export const CardKicker = styled(Eyebrow)`
 export const CardTitle = styled.h2`
   margin: 0;
   font-size: 1.3rem;
-  letter-spacing: -0.04em;
+  letter-spacing: 0.01em;
 `;
 
 export const Count = styled.span`
   flex: none;
   padding: var(--padding-sm-1) var(--padding-sm-2);
-  ${radius("pill")}
+  ${radius('pill')}
   color: var(--color-text-muted);
   background: var(--color-surface-muted);
   font-size: 0.7rem;
@@ -139,7 +139,7 @@ export const Palette = styled.div`
 `;
 
 export const Swatch = styled.div`
-  ${flex({ direction: "column", align: "top", gap: "sm-1" })}
+  ${flex({ direction: 'column', align: 'top', gap: 'sm-1' })}
   min-width: 0;
 `;
 
@@ -154,7 +154,7 @@ export const PaletteColor = styled.div<PaletteColorProps>`
   min-height: 4rem;
   place-items: center;
   border: 1px solid var(--color-border);
-  ${radius("sm")}
+  ${radius('sm')}
   color: ${({ $foreground }) => palette[$foreground]};
   background: ${({ $background }) => palette[$background]};
   font-size: 1.25rem;
@@ -171,7 +171,7 @@ export const SwatchName = styled.span`
 
 export const TokenCode = styled.code`
   color: var(--color-text-muted);
-  font-family: "Courier New", monospace;
+  font-family: 'Courier New', monospace;
   font-size: 0.65rem;
 `;
 
@@ -209,15 +209,24 @@ export const SpacingBar = styled.span<SpacingBarProps>`
   width: ${({ $token }) => space($token)};
   max-width: 100%;
   height: 0.45rem;
-  ${radius("pill")}
+  ${radius('pill')}
   background: var(--color-accent);
 `;
 
 export const Footer = styled.footer`
-  ${flex({ align: "center", justify: "space-between", gap: "sm-2", wrap: "wrap" })}
+  ${flex({ align: 'center', justify: 'space-between', gap: 'sm-2', wrap: 'wrap' })}
   margin-top: var(--margin-xl-1);
   padding-top: var(--padding-md-2);
   border-top: 1px solid var(--color-border);
   color: var(--color-text-muted);
   font-size: 0.75rem;
+
+  div {
+    display: flex;
+    gap: 10px;
+
+    span {
+      font-size: 1.5em;
+    }
+  }
 `;

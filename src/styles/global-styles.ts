@@ -101,12 +101,20 @@ export const GlobalStyles = createGlobalStyle`
     min-width: 320px;
     color: var(--color-text);
     background: var(--color-background);
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--font-main), Arial, Helvetica, sans-serif;
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     transition: background-color 180ms ease, color 180ms ease;
+  }
+
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-secondary), sans-serif;
   }
 
   button,

@@ -28,6 +28,8 @@ import {
   TokenCode,
 } from "@/styles/home.styles";
 import type { PaletteToken, SpaceToken } from "@/styles/theme";
+import { STORY_BACKGROUND_VARIANT_COUNT } from "@/lib/story-atmosphere";
+import { FaGift, FaGit, FaGithub } from "react-icons/fa";
 
 const paletteSwatches: {
   name: string;
@@ -54,6 +56,9 @@ const spaceTokens = [
 
 /** Apresenta a paleta de cores e a escala de espaçamentos configuradas no projeto. */
 export default function Home() {
+  // Sorteia o fundo no servidor para o mesmo visual chegar no HTML e na hidratação.
+  const storyBackgroundVariant = Math.floor(Math.random() * STORY_BACKGROUND_VARIANT_COUNT);
+
   return (
     <Page>
       <Shell>
@@ -66,70 +71,21 @@ export default function Home() {
         </Header>
 
         <Hero aria-labelledby="page-title">
-          <Eyebrow>Base visual do projeto</Eyebrow>
-          <Title id="page-title">Uma base consistente para cada tela.</Title>
+          <Eyebrow>Serigrafia criativa · Produção independente</Eyebrow>
+          <Title id="page-title">Produtos que representam a identidade de cada cliente.</Title>
           <Description>
-            Cores, espaçamentos e estilos reutilizáveis para construir a experiência
-            da Brasil Gravações com clareza desde o primeiro componente.
+            Unimos técnica, criatividade e atenção aos detalhes para produzir peças
+            originais, com qualidade em cada etapa.
           </Description>
         </Hero>
 
-        <MobileStories />
-
-        <Cards>
-          <Card aria-labelledby="palette-title">
-            <CardHeading>
-              <div>
-                <CardKicker>01 / Identidade</CardKicker>
-                <CardTitle id="palette-title">Paleta de cores</CardTitle>
-              </div>
-              <Count>07 cores</Count>
-            </CardHeading>
-            <Palette>
-              {/* Renderiza uma amostra visual para cada cor da paleta. */}
-              {paletteSwatches.map((color) => (
-                <Swatch key={color.background}>
-                  <PaletteColor
-                    $background={color.background}
-                    $foreground={color.foreground}
-                  >
-                    Aa
-                  </PaletteColor>
-                  <SwatchName>{color.name}</SwatchName>
-                  <TokenCode>{color.hex}</TokenCode>
-                </Swatch>
-              ))}
-            </Palette>
-          </Card>
-
-          <Card aria-labelledby="spacing-title">
-            <CardHeading>
-              <div>
-                <CardKicker>02 / Ritmo</CardKicker>
-                <CardTitle id="spacing-title">Escala de espaçamento</CardTitle>
-              </div>
-              <Count>05 níveis</Count>
-            </CardHeading>
-            <CardDescription>
-              Margin, padding e gap apontam para a mesma escala de medidas.
-            </CardDescription>
-            <SpacingList>
-              {/* Mostra o nome, a proporção e a variável CSS de cada espaçamento. */}
-              {spaceTokens.map((token) => (
-                <SpacingRow key={token}>
-                  <TokenCode>{token}</TokenCode>
-                  <SpacingBar $token={token} />
-                  <TokenCode>{"var(--space-" + token + ")"}</TokenCode>
-                </SpacingRow>
-              ))}
-            </SpacingList>
-          </Card>
-
-        </Cards>
+        <MobileStories backgroundVariant={storyBackgroundVariant} />
 
         <Footer>
-          <span>Tokens preparados para uso global</span>
-          <span>Claro · Escuro · Sistema</span>
+          <div>Desenvolvido por
+            <span><FaGithub /></span>
+            <a href="#"><i><strong>Pedro Holanda</strong></i></a>
+          </div>
         </Footer>
       </Shell>
     </Page>

@@ -15,6 +15,7 @@ import {
   StoryCopy,
   StoryDescription,
   StoryFrame,
+  StoryAtmosphere,
   StoryImageLayer,
   StorySection,
   StorySwipeLink,
@@ -29,6 +30,7 @@ import {
   StoriesTitle,
   Viewer,
 } from "@/styles/mobile-stories.styles";
+import { FaWhatsapp } from "react-icons/fa";
 
 export type StoryTone = "navy" | "amber" | "stone";
 
@@ -50,6 +52,7 @@ export type StoryItem = {
 
 type MobileStoriesProps = {
   stories?: StoryItem[];
+  backgroundVariant: number;
 };
 
 const STORY_DURATION_MS = 5000;
@@ -58,8 +61,8 @@ const whatsappLink = createWhatsAppLink();
 const defaultStories: StoryItem[] = [
   {
     id: "story-01",
-    title: "Gravações com identidade",
-    description: "Personalize seus produtos com detalhes feitos para durar.",
+    title: "Serigrafia com identidade",
+    description: "Criamos produtos que representam a identidade de cada cliente.",
     media: {
       type: "image",
       src: "https://res.cloudinary.com/zuofqjtd/image/upload/v1791985738/05.jpg",
@@ -68,8 +71,8 @@ const defaultStories: StoryItem[] = [
   },
   {
     id: "story-02",
-    title: "Do desenho à peça",
-    description: "Transformamos sua ideia em um presente especial.",
+    title: "Técnica em cada detalhe",
+    description: "Unimos criatividade e cuidado para transformar ideias em produtos.",
     media: {
       type: "image",
       src: "https://res.cloudinary.com/zuofqjtd/image/upload/v1791985738/04.jpg",
@@ -78,8 +81,8 @@ const defaultStories: StoryItem[] = [
   },
   {
     id: "story-03",
-    title: "Sua marca em destaque",
-    description: "Cores, materiais e acabamentos que combinam com você.",
+    title: "Originalidade em cada projeto",
+    description: "Soluções criativas com consistência do primeiro traço ao acabamento.",
     media: {
       type: "image",
       src: "https://res.cloudinary.com/zuofqjtd/image/upload/v1791985737/03.jpg",
@@ -89,19 +92,19 @@ const defaultStories: StoryItem[] = [
   {
     id: "story-whatsapp",
     title: "WhatsApp",
-    description: "Toque para conversar com a nossa equipe e contar sobre o seu projeto.",
+    description: "Chame no WhatsApp e conte sua ideia. Nossa equipe cuida de cada detalhe.",
     media: {
       type: "text",
-      content: "Vamos conversar?",
-      tone: "navy",
+      content: "Vamos criar com você?",
+      tone: "stone",
     },
     link: whatsappLink,
     variant: "whatsapp",
   },
   {
     id: "story-04",
-    title: "Produção cuidadosa",
-    description: "Cada pedido recebe atenção em todas as etapas.",
+    title: "Qualidade em cada etapa",
+    description: "Atenção ao processo para entregar produtos bem-feitos e consistentes.",
     media: {
       type: "image",
       src: "https://res.cloudinary.com/zuofqjtd/image/upload/v1791985737/06.jpg",
@@ -110,8 +113,8 @@ const defaultStories: StoryItem[] = [
   },
   {
     id: "story-05",
-    title: "Peças para presentear",
-    description: "Surpreenda com algo pensado nos mínimos detalhes.",
+    title: "Criatividade que vira produto",
+    description: "Peças originais para destacar a identidade de cada cliente.",
     media: {
       type: "image",
       src: "https://res.cloudinary.com/zuofqjtd/image/upload/v1791985736/02.jpg",
@@ -120,8 +123,8 @@ const defaultStories: StoryItem[] = [
   },
   {
     id: "story-06",
-    title: "Vamos criar juntos",
-    description: "Conte o que imaginou e dê vida ao seu projeto.",
+    title: "Produção independente",
+    description: "Produção consciente, transparência e compromisso em cada projeto.",
     media: {
       type: "image",
       src: "https://res.cloudinary.com/zuofqjtd/image/upload/v1791985571/banner-stories/01.jpg",
@@ -149,14 +152,29 @@ function isSafeStoryLink(link: string | undefined): link is string {
 }
 
 /** Desenha a mídia de acordo com o formato informado no story. */
-function StoryVisual({ story, index }: { story: StoryItem; index: number }) {
+function StoryVisual({
+  story,
+  backgroundVariant,
+}: {
+  story: StoryItem;
+  backgroundVariant: number;
+}) {
   if (story.media.type === "text") {
     return (
-      <StoryTextCanvas $tone={story.media.tone ?? "navy"}>
-        <TextDecoration aria-hidden="true" />
+      <StoryTextCanvas
+        $tone={story.media.tone ?? "navy"}
+        $hasBackground={story.variant === "whatsapp"}
+      >
+        {story.variant === "whatsapp" && (
+          <StoryAtmosphere
+            $variant={backgroundVariant}
+            aria-hidden="true"
+            data-story-background=""
+          />
+        )}
+        {story.variant !== "whatsapp" && <TextDecoration aria-hidden="true" />}
         <StoryTextMark>BRASIL GRAVAÇÕES</StoryTextMark>
         <StoryTextBody>{limitStoryText(story.media.content)}</StoryTextBody>
-        <Counter aria-hidden="true">{String(index + 1).padStart(2, "0")}</Counter>
       </StoryTextCanvas>
     );
   }
@@ -203,10 +221,14 @@ function StoryVisual({ story, index }: { story: StoryItem; index: number }) {
 }
 
 /** Apresenta stories mobile com suporte a imagem, GIF, vídeo e conteúdo textual. */
-export function MobileStories({ stories = defaultStories }: MobileStoriesProps) {
+export function MobileStories({
+  stories = defaultStories,
+  backgroundVariant,
+}: MobileStoriesProps) {
   const swiperRef = useRef<SwiperInstance | null>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+
   /** Inicia ou pausa a troca automática conforme a preferência de movimento. */
   useEffect(() => {
     if (stories.length < 2) return;
@@ -284,7 +306,7 @@ export function MobileStories({ stories = defaultStories }: MobileStoriesProps) 
       <StoriesHeading>
         <StoriesIntro>
           <span>Da nossa oficina</span>
-          <StoriesTitle id="mobile-stories-title">Histórias para inspirar</StoriesTitle>
+          <StoriesTitle id="mobile-stories-title">Ideias que ganham forma na serigrafia</StoriesTitle>
         </StoriesIntro>
         <Counter aria-live="polite">
           {String(currentIndex + 1).padStart(2, "0")} / {String(stories.length).padStart(2, "0")}
@@ -325,7 +347,10 @@ export function MobileStories({ stories = defaultStories }: MobileStoriesProps) 
                 onTouchStart={handleTouchStart}
                 onTouchEnd={(event) => handleTouchEnd(event, story.link)}
               >
-                <StoryVisual story={story} index={index} />
+                <StoryVisual
+                  story={story}
+                  backgroundVariant={backgroundVariant}
+                />
                 <StoryCopy $centered={story.variant === "whatsapp"}>
                   {story.variant !== "whatsapp" && (
                     <StoryTitle>{limitStoryText(story.title)}</StoryTitle>
@@ -336,8 +361,7 @@ export function MobileStories({ stories = defaultStories }: MobileStoriesProps) 
                       href={story.link}
                       aria-label="Falar com a equipe pelo WhatsApp"
                     >
-                      <span aria-hidden="true">&#8593;</span>
-                      <small>Falar pelo WhatsApp</small>
+                      <small><FaWhatsapp /></small>
                     </StorySwipeLink>
                   )}
                 </StoryCopy>
