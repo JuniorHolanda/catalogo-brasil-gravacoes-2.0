@@ -7,28 +7,29 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import type { Swiper as SwiperInstance } from "swiper";
 import { Autoplay } from "swiper/modules";
 import { createWhatsAppLink } from "@/lib/whatsapp";
+import { STORY_BACKGROUND_VARIANT_COUNT } from "@/lib/story-atmosphere";
 import {
-  Counter,
-  ProgressList,
-  ProgressFill,
-  ProgressTrack,
-  StoryCopy,
-  StoryDescription,
-  StoryFrame,
-  StoryAtmosphere,
-  StoryImageLayer,
-  StorySection,
-  StorySwipeLink,
-  StoryTextBody,
-  StoryTextCanvas,
-  StoryTextMark,
-  StoryTitle,
-  StoryVideo,
-  TextDecoration,
-  StoriesHeading,
-  StoriesIntro,
-  StoriesTitle,
-  Viewer,
+  SCounter,
+  SProgressList,
+  SProgressFill,
+  SProgressTrack,
+  SStoryCopy,
+  SStoryDescription,
+  SStoryFrame,
+  SStoryAtmosphere,
+  SStoryImageLayer,
+  SStorySection,
+  SStorySwipeLink,
+  SStoryTextBody,
+  SStoryTextCanvas,
+  SStoryTextMark,
+  SStoryTitle,
+  SStoryVideo,
+  STextDecoration,
+  SStoriesHeading,
+  SStoriesIntro,
+  SStoriesTitle,
+  SViewer,
 } from "@/styles/mobile-stories.styles";
 import { FaWhatsapp } from "react-icons/fa";
 
@@ -52,7 +53,7 @@ export type StoryItem = {
 
 type MobileStoriesProps = {
   stories?: StoryItem[];
-  backgroundVariant: number;
+  backgroundVariant?: number;
 };
 
 const STORY_DURATION_MS = 5000;
@@ -161,29 +162,33 @@ function StoryVisual({
 }) {
   if (story.media.type === "text") {
     return (
-      <StoryTextCanvas
+      <SStoryTextCanvas
         $tone={story.media.tone ?? "navy"}
         $hasBackground={story.variant === "whatsapp"}
       >
         {story.variant === "whatsapp" && (
-          <StoryAtmosphere
+          <SStoryAtmosphere
             $variant={backgroundVariant}
             aria-hidden="true"
             data-story-background=""
           />
         )}
-        {story.variant !== "whatsapp" && <TextDecoration aria-hidden="true" />}
-        <StoryTextMark>BRASIL GRAVAÇÕES</StoryTextMark>
-        <StoryTextBody>{limitStoryText(story.media.content)}</StoryTextBody>
-      </StoryTextCanvas>
+        {story.variant !== "whatsapp" && <STextDecoration aria-hidden="true" />}
+        <SStoryTextMark>BRASIL GRAVAÇÕES</SStoryTextMark>
+        <SStoryTextBody type="paragraph" size="xxl" weight={600}>
+          {limitStoryText(story.media.content)}
+        </SStoryTextBody>
+      </SStoryTextCanvas>
     );
   }
 
   if (!isSafeMediaSource(story.media.src)) {
     return (
-      <StoryTextCanvas $tone="navy">
-        <StoryTextBody>Mídia indisponível</StoryTextBody>
-      </StoryTextCanvas>
+      <SStoryTextCanvas $tone="navy">
+        <SStoryTextBody type="paragraph" size="xxl" weight={600}>
+          Mídia indisponível
+        </SStoryTextBody>
+      </SStoryTextCanvas>
     );
   }
 
@@ -193,7 +198,7 @@ function StoryVisual({
       : undefined;
 
     return (
-      <StoryVideo
+      <SStoryVideo
         aria-label={story.title}
         controls
         playsInline
@@ -202,12 +207,12 @@ function StoryVisual({
       >
         <source src={story.media.src} />
         Seu navegador não oferece suporte a este vídeo.
-      </StoryVideo>
+      </SStoryVideo>
     );
   }
 
   return (
-    <StoryImageLayer>
+    <SStoryImageLayer>
       <Image
         src={story.media.src}
         alt={story.media.alt}
@@ -216,7 +221,7 @@ function StoryVisual({
         unoptimized
         loading="lazy"
       />
-    </StoryImageLayer>
+    </SStoryImageLayer>
   );
 }
 
@@ -228,6 +233,18 @@ export function MobileStories({
   const swiperRef = useRef<SwiperInstance | null>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [randomBackgroundVariant, setRandomBackgroundVariant] = useState<number | null>(null);
+
+  /** Sorteia somente depois da hidratação para manter o HTML inicial igual no servidor e cliente. */
+  useEffect(() => {
+    const frameId = window.requestAnimationFrame(() => {
+      setRandomBackgroundVariant(
+        Math.floor(Math.random() * STORY_BACKGROUND_VARIANT_COUNT),
+      );
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, []);
 
   /** Inicia ou pausa a troca automática conforme a preferência de movimento. */
   useEffect(() => {
@@ -300,29 +317,38 @@ export function MobileStories({
   if (stories.length === 0) return null;
 
   const currentIndex = Math.min(activeIndex, stories.length - 1);
+  const resolvedBackgroundVariant = backgroundVariant ?? randomBackgroundVariant ?? 0;
 
   return (
-    <StorySection aria-labelledby="mobile-stories-title">
-      <StoriesHeading>
-        <StoriesIntro>
+    <SStorySection aria-labelledby="mobile-stories-title">
+      <SStoriesHeading>
+        <SStoriesIntro>
           <span>Da nossa oficina</span>
-          <StoriesTitle id="mobile-stories-title">Ideias que ganham forma na serigrafia</StoriesTitle>
-        </StoriesIntro>
-        <Counter aria-live="polite">
+          <SStoriesTitle
+            type="title"
+            headingLevel="h2"
+            size="md"
+            weight={700}
+            id="mobile-stories-title"
+          >
+            Ideias que ganham forma na serigrafia
+          </SStoriesTitle>
+        </SStoriesIntro>
+        <SCounter aria-live="polite">
           {String(currentIndex + 1).padStart(2, "0")} / {String(stories.length).padStart(2, "0")}
-        </Counter>
-      </StoriesHeading>
+        </SCounter>
+      </SStoriesHeading>
 
-      <Viewer>
-        <ProgressList aria-hidden="true">
+      <SViewer>
+        <SProgressList aria-hidden="true">
           {stories.map((story, index) => (
-            <ProgressTrack key={story.id}>
-              <ProgressFill
+            <SProgressTrack key={story.id}>
+              <SProgressFill
                 $state={index < currentIndex ? "complete" : index === currentIndex ? "active" : "upcoming"}
               />
-            </ProgressTrack>
+            </SProgressTrack>
           ))}
-        </ProgressList>
+        </SProgressList>
 
         <Swiper
           className="mobile-stories-swiper"
@@ -341,35 +367,39 @@ export function MobileStories({
           onSwiper={handleSwiper}
           onSlideChange={handleSlideChange}
         >
-          {stories.map((story, index) => (
+          {stories.map((story) => (
             <SwiperSlide key={story.id}>
-              <StoryFrame
+              <SStoryFrame
                 onTouchStart={handleTouchStart}
                 onTouchEnd={(event) => handleTouchEnd(event, story.link)}
               >
                 <StoryVisual
                   story={story}
-                  backgroundVariant={backgroundVariant}
+                  backgroundVariant={resolvedBackgroundVariant}
                 />
-                <StoryCopy $centered={story.variant === "whatsapp"}>
+                <SStoryCopy $centered={story.variant === "whatsapp"}>
                   {story.variant !== "whatsapp" && (
-                    <StoryTitle>{limitStoryText(story.title)}</StoryTitle>
+                    <SStoryTitle type="title" headingLevel="h3" size="sm" weight={700}>
+                      {limitStoryText(story.title)}
+                    </SStoryTitle>
                   )}
-                  <StoryDescription>{limitStoryText(story.description)}</StoryDescription>
+                  <SStoryDescription type="paragraph" size="md" weight={400}>
+                    {limitStoryText(story.description)}
+                  </SStoryDescription>
                   {isSafeStoryLink(story.link) && (
-                    <StorySwipeLink
+                    <SStorySwipeLink
                       href={story.link}
                       aria-label="Falar com a equipe pelo WhatsApp"
                     >
                       <small><FaWhatsapp /></small>
-                    </StorySwipeLink>
+                    </SStorySwipeLink>
                   )}
-                </StoryCopy>
-              </StoryFrame>
+                </SStoryCopy>
+              </SStoryFrame>
             </SwiperSlide>
           ))}
         </Swiper>
-      </Viewer>
-    </StorySection>
+      </SViewer>
+    </SStorySection>
   );
 }

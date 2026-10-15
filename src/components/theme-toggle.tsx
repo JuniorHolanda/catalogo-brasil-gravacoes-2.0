@@ -1,33 +1,35 @@
 "use client";
 
+import { cssTheme } from "@/styles/theme";
+
 import styled from "styled-components";
 import { useTheme } from "@/components/theme-provider";
 import { flex, focusRing, radius, transition, visuallyHidden } from "@/styles/mixins";
 
-const Button = styled.button`
+const SButton = styled.button`
   ${flex({ align: "center", justify: "center" })}
   ${radius("pill")}
   ${transition()}
   width: 2.75rem;
   height: 2.75rem;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text);
+  border: 1px solid ${cssTheme.colors.border};
+  background: ${cssTheme.colors.surface};
+  color: ${cssTheme.colors.text};
   cursor: pointer;
 
   &:hover {
-    border-color: var(--color-accent);
+    border-color: ${cssTheme.colors.accent};
   }
 
   ${focusRing()}
 `;
 
-const Icon = styled.span`
+const SIcon = styled.span`
   font-size: 1.25rem;
   line-height: 1;
 `;
 
-const ScreenReaderOnly = styled.span`
+const SScreenReaderOnly = styled.span`
   ${visuallyHidden()}
 `;
 
@@ -38,14 +40,14 @@ export function ThemeToggle() {
   const toggleTheme = () => setIsDark(!isDark);
 
   return (
-    <Button
+    <SButton
       aria-label="Alternar tema claro e escuro"
       aria-pressed={isDark}
       onClick={toggleTheme}
       type="button"
     >
-      <Icon aria-hidden="true">◐</Icon>
-      <ScreenReaderOnly>Alternar tema</ScreenReaderOnly>
-    </Button>
+      <SIcon aria-hidden="true">◐</SIcon>
+      <SScreenReaderOnly>Alternar tema</SScreenReaderOnly>
+    </SButton>
   );
 }

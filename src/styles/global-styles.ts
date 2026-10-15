@@ -1,6 +1,6 @@
-import { createGlobalStyle, css } from "styled-components";
-import { darkTheme, lightTheme, palette, spacing } from "@/styles/theme";
-import type { AppTheme } from "@/styles/theme";
+import { createGlobalStyle } from "styled-components";
+import { cssTheme, darkThemeOverrides, spacing } from "@/styles/theme";
+import { padding } from "@/styles/mixins";
 
 // Gera as variáveis CSS para cada medida da escala compartilhada.
 const spacingVariables = Object.entries(spacing)
@@ -20,63 +20,28 @@ const spacingAliases = (["margin", "padding", "gap"] as const)
   )
   .join("\n");
 
-// Expõe todas as cores da paleta como variáveis CSS globais.
-const paletteVariables = Object.entries(palette)
-  .map(([name, value]) => `--palette-${name}: ${value};`)
-  .join("\n");
-
-/** Monta as variáveis semânticas CSS a partir do tema recebido. */
-const themeVariables = (theme: AppTheme) => css`
-  --color-background: ${theme.tokens.background};
-  --color-surface: ${theme.tokens.surface};
-  --color-surface-muted: ${theme.tokens.surfaceMuted};
-  --color-text: ${theme.tokens.text};
-  --color-text-muted: ${theme.tokens.textMuted};
-  --color-border: ${theme.tokens.border};
-  --color-primary: ${theme.tokens.primary};
-  --color-primary-text: ${theme.tokens.primaryText};
-  --color-accent: ${theme.tokens.accent};
-  --color-accent-text: ${theme.tokens.accentText};
-  --color-focus: ${theme.tokens.focus};
-`;
-
-export const GlobalStyles = createGlobalStyle`
+export const SGlobalStyles = createGlobalStyle`
   :root {
-    color-scheme: light;
+    color-scheme: ${cssTheme.mode};
     ${spacingVariables}
     ${spacingAliases}
-    ${paletteVariables}
-    --radius-none: ${lightTheme.radii.none};
-    --radius-sm: ${lightTheme.radii.sm};
-    --radius-md: ${lightTheme.radii.md};
-    --radius-lg: ${lightTheme.radii.lg};
-    --radius-pill: ${lightTheme.radii.pill};
-    --shadow-low: ${lightTheme.shadows.low};
-    --shadow-medium: ${lightTheme.shadows.medium};
-    --shadow-high: ${lightTheme.shadows.high};
-    ${themeVariables(lightTheme)}
-  }
-
-  :root[data-theme="light"] {
-    color-scheme: light;
-    ${themeVariables(lightTheme)}
+    --radius-none: ${cssTheme.radii.none};
+    --radius-sm: ${cssTheme.radii.sm};
+    --radius-md: ${cssTheme.radii.md};
+    --radius-lg: ${cssTheme.radii.lg};
+    --radius-pill: ${cssTheme.radii.pill};
+    --shadow-low: ${cssTheme.shadows.low};
+    --shadow-medium: ${cssTheme.shadows.medium};
+    --shadow-high: ${cssTheme.shadows.high};
   }
 
   :root[data-theme="dark"] {
-    color-scheme: dark;
-    ${themeVariables(darkTheme)}
-    --shadow-low: 0 1px 2px rgb(0 0 0 / 28%);
-    --shadow-medium: 0 12px 32px rgb(0 0 0 / 36%);
-    --shadow-high: 0 24px 64px rgb(0 0 0 / 48%);
+    ${darkThemeOverrides}
   }
 
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme]) {
-      color-scheme: dark;
-      ${themeVariables(darkTheme)}
-      --shadow-low: 0 1px 2px rgb(0 0 0 / 28%);
-      --shadow-medium: 0 12px 32px rgb(0 0 0 / 36%);
-      --shadow-high: 0 24px 64px rgb(0 0 0 / 48%);
+      ${darkThemeOverrides}
     }
   }
 
@@ -87,26 +52,43 @@ export const GlobalStyles = createGlobalStyle`
   }
 
   html,
-  body {
-    min-height: 100%;
+  body,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p {
     margin: 0;
   }
 
+  html,
+  body {
+    min-height: 100%;
+  }
+
   html {
-    background: var(--color-background);
+    background: ${cssTheme.colors.background};
     scroll-behavior: smooth;
   }
 
   body {
     min-width: 320px;
-    color: var(--color-text);
-    background: var(--color-background);
+    color: ${cssTheme.colors.text};
+    background: ${cssTheme.colors.background};
     font-family: var(--font-main), Arial, Helvetica, sans-serif;
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     transition: background-color 180ms ease, color 180ms ease;
+  }
+
+  @media (max-width: 760px) {
+    body {
+      ${padding('b-xl-1', { safeArea: ["bottom"] })}
+    }
   }
 
   h2,
@@ -129,12 +111,12 @@ export const GlobalStyles = createGlobalStyle`
 
   button:focus-visible,
   a:focus-visible {
-    outline: 3px solid var(--color-focus);
+    outline: 3px solid ${cssTheme.colors.focus};
     outline-offset: 3px;
   }
 
   ::selection {
-    color: var(--color-primary-text);
-    background: var(--color-primary);
+    color: ${cssTheme.colors.primaryText};
+    background: ${cssTheme.colors.primary};
   }
 `;

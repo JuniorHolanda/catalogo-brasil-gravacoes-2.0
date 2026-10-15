@@ -10,10 +10,8 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
-import { ThemeProvider as StyledThemeProvider } from "styled-components";
 import { saveThemePreference } from "@/app/actions/theme";
 import type { ThemePreference } from "@/lib/theme";
-import { darkTheme, lightTheme } from "@/styles/theme";
 
 type ThemeContextValue = {
   isDark: boolean;
@@ -55,7 +53,6 @@ export function ThemeProvider({ children, initialPreference }: ThemeProviderProp
     getSystemThemeServerSnapshot,
   );
   const isDark = preference === "system" ? systemIsDark : preference === "dark";
-  const activeTheme = isDark ? darkTheme : lightTheme;
 
   // Mantém o atributo do documento alinhado à preferência explícita ou ao sistema.
   useEffect(() => {
@@ -91,9 +88,7 @@ export function ThemeProvider({ children, initialPreference }: ThemeProviderProp
   );
 
   return (
-    <ThemeContext.Provider value={value}>
-      <StyledThemeProvider theme={activeTheme}>{children}</StyledThemeProvider>
-    </ThemeContext.Provider>
+    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
   );
 }
 

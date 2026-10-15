@@ -3,10 +3,13 @@ import { Baloo_Chettan_2, Dongle } from "next/font/google";
 import { cookies } from "next/headers";
 import type { ReactNode } from "react";
 import "swiper/css";
+import { MobileBottomNavigation } from "@/components/mobile-bottom-navigation";
+import { MotionProvider } from "@/components/motion-provider";
 import { StyledComponentsRegistry } from "@/components/styled-components-registry";
 import { ThemeProvider } from "@/components/theme-provider";
 import { THEME_COOKIE_NAME, type ThemePreference } from "@/lib/theme";
-import { GlobalStyles } from "@/styles/global-styles";
+import { SGlobalStyles } from "@/styles/global-styles";
+import { lightTheme, ThemeVariables } from "@/styles/theme";
 
 const mainFont = Baloo_Chettan_2({
   weight: "variable",
@@ -42,9 +45,13 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     >
       <body>
         <StyledComponentsRegistry>
-          <GlobalStyles />
           <ThemeProvider initialPreference={initialPreference}>
-            {children}
+            <ThemeVariables theme={lightTheme} />
+            <SGlobalStyles />
+              <MotionProvider>
+                {children}
+                <MobileBottomNavigation />
+              </MotionProvider>
           </ThemeProvider>
         </StyledComponentsRegistry>
       </body>

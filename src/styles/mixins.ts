@@ -1,6 +1,7 @@
+import { cssTheme } from "@/styles/theme";
 import type { CSSProperties } from "react";
 import { css } from "styled-components";
-import type { SpaceToken } from "@/styles/theme";
+import type { SpaceToken, SpacingScale } from "@/styles/theme";
 
 export type FlexAlignment = "top" | "center" | "bottom";
 export type FlexDirection = "row" | "column";
@@ -14,6 +15,68 @@ export type FlexOptions = {
   position?: CSSProperties["position"];
   wrap?: CSSProperties["flexWrap"];
 };
+
+export type PaddingDirection = "t" | "l" | "r" | "b" | "tb" | "lr";
+export type PaddingSize = "none" | SpacingScale | SpaceToken;
+export type PaddingUnit =
+  | PaddingSize
+  | `${PaddingDirection}-${PaddingSize}`;
+export type PaddingSafeAreaEdge = "top" | "left" | "right" | "bottom";
+
+export type PaddingOptions = {
+  /** Soma a área segura do dispositivo às bordas indicadas. */
+  safeArea?: readonly PaddingSafeAreaEdge[];
+};
+
+const paddingDirections: Record<PaddingDirection, readonly PaddingSafeAreaEdge[]> = {
+  t: ["top"],
+  l: ["left"],
+  r: ["right"],
+  b: ["bottom"],
+  tb: ["top", "bottom"],
+  lr: ["left", "right"],
+};
+
+const paddingEdges: readonly PaddingSafeAreaEdge[] = ["top", "right", "bottom", "left"];
+
+/**
+ * Aplica um token nas quatro bordas ou nas bordas indicadas.
+ * Sem etapa explícita, usa a opção intermediária; `none` zera as bordas indicadas.
+ */
+export function padding(...unitsAndOptions: Array<PaddingUnit | PaddingOptions>) {
+  const lastArgument = unitsAndOptions[unitsAndOptions.length - 1];
+  const hasOptions = typeof lastArgument === "object" && lastArgument !== null;
+  const options = hasOptions ? lastArgument as PaddingOptions : {};
+  const units = hasOptions
+    ? unitsAndOptions.slice(0, -1) as PaddingUnit[]
+    : unitsAndOptions as PaddingUnit[];
+  const edgeTokens: Partial<Record<PaddingSafeAreaEdge, string>> = {};
+
+  for (const unit of units) {
+    const parts = unit.split("-");
+    const hasDirection = parts.length > 1 && ["t", "l", "r", "b", "tb", "lr"].includes(parts[0]);
+    const direction = hasDirection ? parts.shift() as PaddingDirection : undefined;
+    const token = parts.join("-");
+    const [scale, step = "2"] = token.split("-");
+    const edges = direction ? paddingDirections[direction] : paddingEdges;
+
+    const value = scale === "none" ? "0" : `var(--padding-${scale}-${step})`;
+
+    for (const edge of edges) edgeTokens[edge] = value;
+  }
+
+  const declarations = paddingEdges
+    .filter((edge) => edgeTokens[edge])
+    .map((edge) => {
+      const token = edgeTokens[edge]!;
+      const safeArea = options.safeArea?.includes(edge)
+        ? `calc(${token} + env(safe-area-inset-${edge}))`
+        : token;
+      return `padding-${edge}: ${safeArea};`;
+    });
+
+  return css`${declarations.join("\n")}`;
+}
 
 const alignments: Record<FlexAlignment, string> = {
   top: "flex-start",
@@ -46,12 +109,37 @@ export function flex({
 }
 
 export type RadiusToken = "none" | "sm" | "md" | "lg" | "pill";
+export type RadiusDirection = "t" | "l" | "r" | "b" | "tb" | "lr";
+export type RadiusUnit = RadiusToken | `${RadiusDirection}-${RadiusToken}`;
 
-/** Aplica o raio de borda definido pelo token informado. */
-export function radius(size: RadiusToken = "md") {
-  return css`
-    border-radius: var(--radius-${size});
-  `;
+const radiusCorners: Record<RadiusDirection, readonly string[]> = {
+  t: ["top-left", "top-right"],
+  l: ["top-left", "bottom-left"],
+  r: ["top-right", "bottom-right"],
+  b: ["bottom-left", "bottom-right"],
+  tb: ["top-left", "top-right", "bottom-right", "bottom-left"],
+  lr: ["top-left", "top-right", "bottom-right", "bottom-left"],
+};
+
+/** Aplica o raio em todos os cantos ou somente nos lados indicados. */
+export function radius(...units: RadiusUnit[]) {
+  const cornerTokens: Record<string, RadiusToken> = {};
+  const corners = ["top-left", "top-right", "bottom-right", "bottom-left"];
+
+  for (const unit of units.length ? units : ["md"]) {
+    const [direction, token] = unit.includes("-")
+      ? unit.split("-") as [RadiusDirection, RadiusToken]
+      : [undefined, unit as RadiusToken];
+    const affectedCorners = direction ? radiusCorners[direction] : corners;
+
+    for (const corner of affectedCorners) cornerTokens[corner] = token;
+  }
+
+  const declarations = corners
+    .filter((corner) => cornerTokens[corner])
+    .map((corner) => `border-${corner}-radius: var(--radius-${cornerTokens[corner]});`);
+
+  return css`${declarations.join("\n")}`;
 }
 
 export type ElevationLevel = "low" | "medium" | "high";
@@ -78,7 +166,7 @@ export function transition(duration: "120ms" | "180ms" | "240ms" = "180ms") {
 export function focusRing() {
   return css`
     &:focus-visible {
-      outline: 3px solid var(--color-focus);
+      outline: 3px solid ${cssTheme.colors.focus};
       outline-offset: 3px;
     }
   `;
@@ -90,10 +178,9 @@ export function visuallyHidden() {
     position: absolute;
     width: 1px;
     height: 1px;
-    padding: 0;
-    margin: -1px;
     overflow: hidden;
     clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
     white-space: nowrap;
     border: 0;
   `;

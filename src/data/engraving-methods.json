@@ -1,0 +1,52 @@
+[
+  {
+    "slug": "silkscreen",
+    "name": "SilkScreen",
+    "supportsPreQuote": true,
+    "tagline": "Cores vibrantes",
+    "description": "Tinta aplicada diretamente à peça, com cores vivas e cobertura consistente.",
+    "details": "A tinta atravessa uma tela preparada e é aplicada diretamente à superfície. O resultado depende do material, da arte e do acabamento escolhido.",
+    "image": "/images/engraving-methods/silkscreen.png",
+    "alt": "Aplicação de tinta em tecido por uma tela de serigrafia"
+  },
+  {
+    "slug": "dtf",
+    "name": "DTF",
+    "supportsPreQuote": false,
+    "tagline": "Detalhes precisos",
+    "description": "Alta qualidade em detalhes e contornos, ideal para peças pequenas.",
+    "details": "A arte é impressa em um filme e transferida para a peça com calor, permitindo reproduzir detalhes e contornos com precisão.",
+    "image": "/images/engraving-methods/dtf.png",
+    "alt": "Película DTF sendo destacada de uma peça de tecido"
+  },
+  {
+    "slug": "transfer",
+    "name": "Transfer",
+    "supportsPreQuote": false,
+    "tagline": "Aplicação uniforme",
+    "description": "Arte aplicada por calor sobre o material, com acabamento bem definido.",
+    "details": "A estampa é preparada em uma folha de transferência e aplicada à superfície por calor. A compatibilidade varia conforme o material e o tipo de transfer.",
+    "image": "/images/engraving-methods/transfer.png",
+    "alt": "Prensa térmica aplicando uma folha de transfer sobre uma bolsa de tecido"
+  },
+  {
+    "slug": "baixo-relevo",
+    "name": "Baixo Relevo",
+    "supportsPreQuote": false,
+    "tagline": "Textura e sutileza",
+    "description": "Uma marca tátil e discreta, pressionada diretamente no material.",
+    "details": "A pressão forma uma marca rebaixada na superfície, criando um acabamento tátil. O resultado depende das características do material.",
+    "image": "/images/engraving-methods/baixo-relevo.png",
+    "alt": "Detalhe de marca em baixo relevo pressionada em material claro"
+  },
+  {
+    "slug": "laser",
+    "name": "Laser",
+    "supportsPreQuote": false,
+    "tagline": "Traços definidos",
+    "description": "Gravação precisa que destaca os detalhes na superfície da peça.",
+    "details": "O feixe de laser marca ou remove uma camada da superfície para formar a arte. O aspecto final varia conforme o material utilizado.",
+    "image": "/images/engraving-methods/laser.png",
+    "alt": "Cabeçote de laser gravando uma peça de madeira"
+  }
+]
