@@ -115,7 +115,7 @@ export const SAccountDismiss = styled.button`
   cursor: default;
 `;
 
-export const SAccountPanel = styled.section<{ $guest?: boolean }>`
+export const SAccountPanel = styled.section<{ $guest?: boolean; $standalone?: boolean }>`
   position: relative;
   z-index: 1;
   width: min(100%, 34rem);
@@ -135,7 +135,7 @@ export const SAccountPanel = styled.section<{ $guest?: boolean }>`
   `}
 
   @media (min-width: 761px) {
-    display: none;
+    display: ${({ $standalone }) => $standalone ? "grid" : "none"};
   }
 `;
 

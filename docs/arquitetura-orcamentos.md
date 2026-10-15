@@ -1,46 +1,32 @@
-# Arquitetura de serviços, usuários e orçamentos
+# Serviços, pedidos e orçamentos
 
-## O que existe no projeto
+## Catálogo e páginas
 
-- O Next.js renderiza o site e as páginas de serviço.
-- `src/data/engraving-methods.json` contém dados públicos dos serviços, incluindo `slug` e `supportsPreQuote`.
-- `src/components/engraving-method-card.tsx` mostra um serviço; o link usa o `slug` para abrir `/servicos/[slug]`.
-- A API e o banco ainda não estão neste repositório. A direção definida é hospedar a API no Render e usar MongoDB.
+`src/data/engraving-methods.json` é o catálogo compartilhado pelo site e pela API. Cada serviço contém seu `slug`, nome, produtos, descrição e a configuração `supportsPreQuote`. A rota `/servicos/[slug]` gera uma página por serviço e carrega o formulário correspondente.
 
-O JSON público serve para montar a interface. Ele não deve guardar dados de clientes, preços privados, senhas ou tokens. A API precisa manter sua própria regra de quais serviços aceitam pré-orçamento; não pode confiar no valor enviado pelo navegador.
+O navegador envia o `slug` e o nome exibido para `POST /api/quotes`. No servidor, o serviço é novamente resolvido pelo catálogo; nome, elegibilidade e produto são validados antes de gravar qualquer pedido. O valor enviado pelo navegador nunca é tratado como preço oficial.
 
-## Fluxo pretendido
+## Envio de pedido
 
-1. A pessoa escolhe um serviço e a página consulta o catálogo pelo `slug`.
-2. Se o serviço não aceita pré-orçamento, a página oferece contato manual pelo WhatsApp.
-3. Se aceita, a página coleta os dados necessários e pede uma simulação à API.
-4. A API valida os campos e calcula o valor com regras que ficam no servidor.
-5. Uma pessoa sem sessão pode ver a simulação. Para salvar, fazer pedido ou acompanhar o orçamento, ela cria uma conta ou entra.
-6. Depois da autenticação, a API valida novamente os dados, recalcula o valor e grava o orçamento ligado ao usuário autenticado.
+1. A pessoa escolhe produto, quantidade, dimensões do logo, cores e, se quiser, anexa uma arte.
+2. A arte passa pela API autenticada de arquivos, é associada à conta e fica no bucket privado R2.
+3. Sem sessão, o site abre o cadastro/entrada. O pedido continua após o cadastro por e-mail; se o acesso Google recarregar a página, os campos do pedido ficam temporariamente na sessão do navegador.
+4. `POST /api/quotes` valida os campos e grava o pedido na coleção `customerQuotes`, associado ao ID da sessão. Para técnicas sem pré-orçamento, o botão de cálculo fica desativado; a solicitação é registrada pela API antes de liberar o link para continuar no WhatsApp.
+5. `GET /api/quotes` devolve apenas os três pedidos mais recentes da conta, usados no menu do usuário.
 
-O valor calculado no navegador nunca deve ser aceito como valor oficial. Na gravação, a API calcula de novo e usa o identificador da sessão autenticada para preencher `userId`; ela ignora qualquer `userId` enviado no formulário.
+A gravação exige sessão autenticada. O servidor ignora IDs de usuário vindos do formulário e verifica se o arquivo anexado pertence à mesma conta. A API só permite anexar arquivos completos e existentes na coleção `customerFiles`.
 
-## Contrato inicial sugerido para a API
+## Coleções usadas
 
-- `POST /auth/register`: valida os dados e cria uma conta com senha armazenada como hash.
-- `POST /auth/login`: autentica e cria uma sessão segura.
-- `POST /auth/logout`: encerra a sessão.
-- `GET /auth/me`: retorna somente os dados públicos da conta autenticada.
-- `POST /quotes/preview`: valida os dados e retorna uma simulação sem salvar um orçamento.
-- `POST /quotes`: exige autenticação, valida e recalcula os dados e salva o orçamento.
-- `GET /me/quotes`: lista somente os orçamentos da pessoa autenticada.
+- `user`, `session` e outras coleções do Better Auth: contas e sessões.
+- `customerQuotes`: referência, usuário, serviço, configuração do pedido, arquivo opcional, status e datas.
+- `customerFiles`: metadados dos arquivos privados guardados no R2.
+- `customers`: cadastros enviados pelo formulário de contato.
 
-Os nomes e campos finais dependem dos formulários e das regras de preço de cada técnica. O preview pode ser refeito após o cadastro para não confiar em um valor calculado antes do login.
+As coleções e seus índices são preparados pelo código do Next.js na primeira utilização. O navegador não conecta diretamente ao Atlas.
 
-## Dados e segurança
+## Regras de orçamento
 
-- A URI do MongoDB e os segredos de sessão ficam nas variáveis privadas do serviço da API no Render. Nunca use prefixo `NEXT_PUBLIC_` nesses segredos.
-- O cliente recebe apenas a URL pública da API, que não é segredo.
-- A API valida tipo, tamanho e limites de cada entrada, autentica operações de gravação e verifica a propriedade de cada orçamento antes de devolver ou alterar dados.
-- Armazene valores monetários em centavos inteiros ou em um tipo decimal adequado, nunca em ponto flutuante binário.
-- Senhas são armazenadas somente com hash forte; sessões devem usar cookies `HttpOnly` e `Secure`, com CORS limitado ao domínio do site e proteção CSRF conforme a configuração dos domínios.
-- O banco deve ter índice único para e-mail normalizado e índice por `userId` e data para consultas de orçamento.
+`supportsPreQuote` controla a disponibilidade visual do botão de cálculo. A API ainda precisa receber as regras e a tabela de preços para calcular e retornar um valor real. Até essas regras serem configuradas, os pedidos são registrados com status `awaiting`; não é exibido um total inventado.
 
-## O que falta para ativar o fluxo
-
-SilkScreen está marcado com `supportsPreQuote: true`; as outras técnicas estão como `false`. Ainda faltam os campos do formulário, as regras de cálculo de SilkScreen, o formato definitivo da API e a implementação do servidor no Render. Até isso existir, a marcação no JSON é configuração do catálogo, não uma promessa de cálculo já ativo.
+Para uma nova técnica, adicione os dados ao catálogo e configure seus produtos e a elegibilidade de pré-orçamento. As páginas serão geradas a partir do mesmo catálogo e a API usará a mesma lista para validar o pedido.

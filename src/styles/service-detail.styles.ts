@@ -11,6 +11,7 @@ export const SServicePage = styled.main`
   gap: var(--gap-md-3);
   width: 100%;
   ${padding('tb-md-3', 'lr-md-1')}
+  padding-bottom: calc(7rem + env(safe-area-inset-bottom));
 
   @media (min-width: 760px) {
     ${padding('tb-xl-1')}

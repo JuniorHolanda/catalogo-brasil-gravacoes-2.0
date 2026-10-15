@@ -42,6 +42,8 @@ const MotionAccountPanel = motion.create(SAccountPanel);
 type AccountMenuProps = {
   user: AccountUser | null;
   onClose: () => void;
+  initialAuthMode?: "signIn" | "signUp";
+  standalone?: boolean;
 };
 
 const orderStatusLabels: Record<AccountOrderStatus, string> = {
@@ -51,12 +53,14 @@ const orderStatusLabels: Record<AccountOrderStatus, string> = {
 };
 
 /** Mostra os atalhos da conta conforme a sessão autenticada disponível. */
-export function AccountMenu({ user, onClose }: AccountMenuProps) {
+export function AccountMenu({ user, onClose, initialAuthMode = "signIn", standalone = false }: AccountMenuProps) {
   const [authNotice, setAuthNotice] = useState("");
-  const [authMode, setAuthMode] = useState<"signIn" | "signUp">("signIn");
+  const [authMode, setAuthMode] = useState<"signIn" | "signUp">(initialAuthMode);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [recentOrders, setRecentOrders] = useState(user?.recentOrders ?? []);
   const panelRef = useRef<HTMLElement>(null);
-  const recentOrders = user?.recentOrders.slice(0, 3) ?? [];
+  const visibleOrders = recentOrders.slice(0, 3);
+  const userEmail = user?.email;
   const safeProfileImage = user?.profileImageUrl &&
     /^(https:\/\/|\/(?!\/))/i.test(user.profileImageUrl)
     ? user.profileImageUrl
@@ -72,6 +76,25 @@ export function AccountMenu({ user, onClose }: AccountMenuProps) {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
+
+  useEffect(() => {
+    if (!userEmail) return;
+
+    let isCurrent = true;
+    void fetch("/api/quotes", { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        return await response.json() as { orders?: typeof recentOrders };
+      })
+      .then((result) => {
+        if (isCurrent && result?.orders) setRecentOrders(result.orders);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [userEmail]);
 
   async function signInWithGoogle() {
     setIsSubmitting(true);
@@ -132,8 +155,9 @@ export function AccountMenu({ user, onClose }: AccountMenuProps) {
       />
       <MotionAccountPanel
         $guest={!user}
+        $standalone={standalone}
         animate={{ opacity: 1, y: 0 }}
-        aria-describedby={user ? (recentOrders.length > 0 ? undefined : "account-menu-description") : "guest-login-description"}
+        aria-describedby={user ? (visibleOrders.length > 0 ? undefined : "account-menu-description") : "guest-login-description"}
         aria-modal="true"
         aria-labelledby={user ? "account-menu-title" : "guest-login-title"}
         id="account-menu"
@@ -168,9 +192,9 @@ export function AccountMenu({ user, onClose }: AccountMenuProps) {
             </SAccountProfile>
 
             <SAccountSectionHeading>Pedidos recentes</SAccountSectionHeading>
-            {recentOrders.length > 0 ? (
+            {visibleOrders.length > 0 ? (
               <SOrderList>
-                {recentOrders.map((order) => (
+                {visibleOrders.map((order) => (
                   <SOrderItem key={order.number}>
                     <SOrderNumber>{order.number}</SOrderNumber>
                     <SOrderStatus $status={order.status}>

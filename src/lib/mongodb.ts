@@ -31,6 +31,23 @@ export type CustomerFileRecord = {
   updatedAt: Date;
 };
 
+export type CustomerQuoteRecord = {
+  ownerUserId: string;
+  number: string;
+  serviceSlug: string;
+  serviceName: string;
+  requestType: "automatic" | "whatsapp";
+  product: string;
+  quantity: number;
+  logoWidthMm: number;
+  logoHeightMm: number;
+  colorCount: number;
+  customerFileId?: string;
+  status: "awaiting" | "producing" | "problem";
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 export type R2StorageQuotaRecord = {
   _id: "global";
   status: "initializing" | "ready";
@@ -69,6 +86,9 @@ declare global {
     | undefined;
   var _brasilGravacoesCustomerFilesCollectionPromise:
     | Promise<Collection<CustomerFileRecord>>
+    | undefined;
+  var _brasilGravacoesCustomerQuotesCollectionPromise:
+    | Promise<Collection<CustomerQuoteRecord>>
     | undefined;
   var _brasilGravacoesR2StorageQuotaCollectionPromise:
     | Promise<Collection<R2StorageQuotaRecord>>
@@ -257,6 +277,31 @@ export async function getCustomerFilesCollection(): Promise<Collection<CustomerF
   }
 
   return global._brasilGravacoesCustomerFilesCollectionPromise;
+}
+
+export async function getCustomerQuotesCollection(): Promise<Collection<CustomerQuoteRecord>> {
+  if (!global._brasilGravacoesCustomerQuotesCollectionPromise) {
+    global._brasilGravacoesCustomerQuotesCollectionPromise = getMongoClientPromise()
+      .then(async (client) => {
+        const collection = client
+          .db(process.env.MONGODB_DB || "brasil-gravacoes")
+          .collection<CustomerQuoteRecord>("customerQuotes");
+        await Promise.all([
+          collection.createIndex(
+            { ownerUserId: 1, createdAt: -1 },
+            { name: "customer_quotes_by_owner_and_date" },
+          ),
+          collection.createIndex({ number: 1 }, { name: "customer_quote_number", unique: true }),
+        ]);
+        return collection;
+      })
+      .catch((error: unknown) => {
+        global._brasilGravacoesCustomerQuotesCollectionPromise = undefined;
+        throw error;
+      });
+  }
+
+  return global._brasilGravacoesCustomerQuotesCollectionPromise;
 }
 
 export async function getR2StorageQuotaCollection(): Promise<Collection<R2StorageQuotaRecord>> {
