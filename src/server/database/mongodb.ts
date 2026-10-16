@@ -38,6 +38,7 @@ export type CustomerQuoteRecord = {
   serviceSlug: string;
   serviceName: string;
   requestType: "automatic" | "whatsapp";
+  customer: CustomerSubmission;
   product: string;
   quantity: number;
   pricing: QuotePricingSnapshot;

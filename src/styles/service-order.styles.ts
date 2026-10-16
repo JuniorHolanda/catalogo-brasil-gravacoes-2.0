@@ -69,8 +69,7 @@ export const SQuoteCard = styled.section`
   ${padding("md-2")}
   ${radius("lg")}
   color: ${cssTheme.colors.text};
-  background: ${cssTheme.colors.surface};
-  box-shadow: ${cssTheme.shadows.medium};
+  background: ${cssTheme.colors.background};
 
   @media (min-width: 760px) {
     ${padding("lg-1")}
@@ -78,18 +77,13 @@ export const SQuoteCard = styled.section`
 `;
 
 export const SQuoteHeading = styled.div`
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--gap-md-2);
-
   h2,
   p {
     margin: 0;
   }
 
   h2 {
-    font-size: clamp(1.15rem, 3vw, 1.5rem);
+    font-size: clamp(1.15rem, 3vw, 1.45rem);
     line-height: 1.1;
   }
 
@@ -106,41 +100,47 @@ export const SQuoteForm = styled.form`
   gap: var(--gap-md-2);
 `;
 
+export const SQuoteTopFields = styled.div`
+  display: grid;
+  gap: var(--gap-md-2);
+  padding-bottom: var(--space-md-1);
+  border-bottom: 1px solid ${cssTheme.colors.border};
+
+  @media (min-width: 560px) {
+    grid-template-columns: minmax(0, 1fr) minmax(10rem, 0.65fr);
+    align-items: end;
+  }
+`;
+
 export const SQuoteEngravings = styled.section`
   display: grid;
   gap: var(--gap-md-2);
+`;
+
+export const SArtworkCard = styled.section`
+  display: grid;
+  min-width: 0;
+  gap: var(--gap-md-1);
   padding-top: var(--space-md-1);
   border-top: 1px solid ${cssTheme.colors.border};
 `;
 
-export const SArtworkCard = styled.fieldset`
-  position: relative;
-  display: grid;
-  min-width: 0;
-  gap: var(--gap-md-2);
-  margin: 0;
-  ${padding("md-2")}
-  ${radius("md")}
-  border: 1px dashed ${cssTheme.colors.textMuted};
-  color: ${cssTheme.colors.text};
-  background: ${cssTheme.colors.surface};
-
-  @media (max-width: 420px) {
-    ${padding("md-1")}
-  }
+export const SArtworkHeader = styled.div`
+  display: flex;
+  min-height: 1.5rem;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--gap-sm-2);
 `;
 
-export const SArtworkLegend = styled.legend`
-  padding: 0 var(--space-sm-1);
+export const SArtworkLegend = styled.h3`
+  margin: 0;
   color: ${cssTheme.colors.textMuted};
   font-size: 0.8rem;
   font-weight: 800;
 `;
 
 export const SRemoveEngravingButton = styled.button`
-  position: absolute;
-  top: var(--space-sm-1);
-  right: var(--space-sm-1);
   display: inline-flex;
   min-height: 2rem;
   align-items: center;
@@ -149,7 +149,7 @@ export const SRemoveEngravingButton = styled.button`
   ${radius("sm")}
   border: 0;
   color: ${cssTheme.colors.context.danger};
-  background: ${cssTheme.colors.surfaceMuted};
+  background: ${cssTheme.colors.surface};
   font: inherit;
   font-size: 0.75rem;
   font-weight: 700;
@@ -170,8 +170,8 @@ export const SAddEngravingButton = styled.button`
   ${padding("tb-sm-1", "lr-md-2")}
   ${radius("md")}
   border: 0;
-  color: ${cssTheme.colors.text};
-  background: ${cssTheme.colors.surfacePanel};
+  color: ${cssTheme.colors.accentText};
+  background: ${cssTheme.colors.accent};
   font: inherit;
   font-weight: 800;
   cursor: pointer;
@@ -187,47 +187,24 @@ export const SAddEngravingButton = styled.button`
   }
 `;
 
-export const SProductOptions = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--gap-sm-2);
-`;
-
-export const SProductOption = styled.button<{ $selected?: boolean }>`
-  min-height: 2.25rem;
-  ${padding("tb-sm-1", "lr-md-2")}
-  ${radius("pill")}
-  border: 1px solid ${cssTheme.colors.border};
-  color: ${({ $selected }) => $selected ? cssTheme.colors.primaryText : cssTheme.colors.text};
-  background: ${({ $selected }) => $selected ? cssTheme.colors.primary : cssTheme.colors.surfaceMuted};
-  font: inherit;
-  font-size: 0.85rem;
-  font-weight: 800;
-  cursor: pointer;
-
-  &:focus-visible {
-    outline: 3px solid ${cssTheme.colors.focus};
-    outline-offset: 2px;
-  }
-`;
-
 export const SQuoteField = styled.label`
   display: grid;
   min-width: 0;
   gap: var(--gap-sm-1);
   color: ${cssTheme.colors.text};
-  font-size: 0.88rem;
+  font-size: 0.92rem;
   font-weight: 800;
 
   input,
-  select {
+  select,
+  textarea {
     width: 100%;
     min-height: 2.6rem;
-    ${padding("tb-sm-1", "lr-sm-2")}
-    ${radius("sm")}
-    border: 1px solid ${cssTheme.colors.border};
+    ${padding("tb-sm-1", "lr-md-1")}
+    ${radius("md")}
+    border: 1px solid transparent;
     color: ${cssTheme.colors.text};
-    background: ${cssTheme.colors.surfaceMuted};
+    background: ${cssTheme.colors.surface};
     font: inherit;
     font-size: 0.88rem;
     font-weight: 400;
@@ -238,32 +215,57 @@ export const SQuoteField = styled.label`
     }
   }
 
-  input::placeholder {
+  input::placeholder,
+  textarea::placeholder {
     color: ${cssTheme.colors.textMuted};
-    opacity: 0.72;
+    opacity: 0.55;
+    text-align: center;
+  }
+
+  textarea {
+    min-height: 7rem;
+    resize: vertical;
   }
 `;
 
 export const SQuoteDimensions = styled.div`
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--gap-sm-2);
+  gap: var(--gap-md-1);
+
+  @media (min-width: 560px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 `;
 
 export const SQuoteUpload = styled.label<{ $disabled?: boolean }>`
+  position: relative;
   display: grid;
-  min-height: 5rem;
-  place-items: center;
-  gap: var(--gap-sm-1);
+  min-height: 10rem;
+  align-content: center;
+  justify-items: center;
+  gap: var(--gap-sm-2);
   ${padding("md-2")}
-  ${radius("md")}
+  ${radius("lg")}
   border: 1px dashed ${cssTheme.colors.textMuted};
   color: ${cssTheme.colors.text};
-  background: ${cssTheme.colors.surfaceMuted};
+  background: color-mix(in srgb, ${cssTheme.colors.background} 70%, ${cssTheme.colors.surface});
   text-align: center;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   cursor: ${({ $disabled }) => $disabled ? "wait" : "pointer"};
   opacity: ${({ $disabled }) => $disabled ? 0.72 : 1};
+
+  strong {
+    display: grid;
+    justify-items: center;
+    gap: var(--gap-sm-1);
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  strong svg {
+    width: 2.8rem;
+    height: 2.8rem;
+  }
 
   span {
     color: ${cssTheme.colors.textMuted};
@@ -286,15 +288,110 @@ export const SQuoteUpload = styled.label<{ $disabled?: boolean }>`
   }
 `;
 
+export const SArtworkFileBadge = styled.div`
+  display: inline-flex;
+  max-width: 5rem;
+  min-height: 4rem;
+  align-items: center;
+  justify-content: center;
+  ${padding("tb-sm-2", "lr-sm-2")}
+  ${radius("pill")}
+  overflow: hidden;
+  color: ${cssTheme.colors.text};
+  background: ${cssTheme.colors.border};
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-align: center;
+  text-overflow: ellipsis;
+`;
+
+export const SQuotePreview = styled.section`
+  display: grid;
+  justify-items: center;
+  gap: var(--gap-sm-1);
+  padding: var(--space-lg-1) 0;
+  text-align: center;
+`;
+
+export const SQuotePreviewLabel = styled.p`
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+`;
+
+export const SQuotePreviewAmount = styled.p`
+  margin: 0;
+  color: ${cssTheme.colors.text};
+  font-size: clamp(2.4rem, 12vw, 4.6rem);
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  overflow-wrap: anywhere;
+`;
+
+export const SQuotePreviewMessage = styled.p`
+  max-width: 34rem;
+  margin: 0;
+  color: ${cssTheme.colors.textMuted};
+  font-size: 0.85rem;
+  line-height: 1.4;
+`;
+
+export const SQuoteContact = styled.section`
+  display: grid;
+  gap: var(--gap-md-1);
+`;
+
+export const SQuoteContactHeading = styled.h3`
+  margin: 0;
+  color: ${cssTheme.colors.text};
+  font-size: 1.15rem;
+`;
+
+export const SQuoteContactGrid = styled.div`
+  display: grid;
+  gap: var(--gap-md-1);
+
+  @media (min-width: 560px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+`;
+
 export const SQuoteActions = styled.div`
   display: grid;
   gap: var(--gap-sm-2);
+
+  @media (min-width: 480px) {
+    grid-template-columns: minmax(6.5rem, 0.42fr) minmax(0, 1fr);
+    align-items: stretch;
+  }
+`;
+
+export const SQuoteSaveButton = styled.button`
+  display: flex;
+  width: 100%;
+  min-height: 3rem;
+  align-items: center;
+  justify-content: center;
+  ${padding("tb-sm-2", "lr-md-2")}
+  ${radius("md")}
+  border: 0;
+  color: ${cssTheme.colors.primaryText};
+  background: ${cssTheme.colors.context.pending};
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: wait;
+  }
 `;
 
 export const SWhatsAppQuoteButton = styled.button`
   display: flex;
   width: 100%;
-  min-height: 2.8rem;
+  min-height: 3rem;
   align-items: center;
   justify-content: center;
   gap: var(--gap-sm-2);
@@ -316,7 +413,7 @@ export const SWhatsAppQuoteButton = styled.button`
 export const SCalculateButton = styled.button<{ $unavailable?: boolean }>`
   display: flex;
   width: 100%;
-  min-height: 2.8rem;
+  min-height: 3rem;
   align-items: center;
   justify-content: center;
   ${padding("tb-sm-2", "lr-md-2")}
@@ -348,7 +445,7 @@ export const SQuoteNotice = styled.p<{ $error?: boolean }>`
   a {
     display: inline-block;
     margin-top: var(--space-sm-2);
-    color: ${cssTheme.colors.primaryText};
+    color: ${cssTheme.colors.primary};
     text-decoration: underline;
     text-underline-offset: 0.2em;
   }

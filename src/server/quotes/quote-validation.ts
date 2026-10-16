@@ -1,5 +1,7 @@
 import "server-only";
 
+import { validateCustomerSubmission, type CustomerSubmission } from "@/server/customers/customer-validation";
+
 export type QuoteRequestType = "automatic" | "whatsapp";
 
 export type QuoteEngravingSubmission = {
@@ -10,14 +12,20 @@ export type QuoteEngravingSubmission = {
   fileId?: string;
 };
 
-export type QuoteSubmission = {
+export type QuotePricingSubmission = {
   serviceSlug: string;
   serviceName: string;
-  requestType: QuoteRequestType;
   product: string;
   quantity: number;
   engravings: QuoteEngravingSubmission[];
 };
+
+export type QuoteSubmission = QuotePricingSubmission & {
+  requestType: QuoteRequestType;
+  customer: CustomerSubmission;
+};
+
+type ValidationResult<T> = { success: true; value: T } | { success: false; error: string };
 
 function trimmedString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
@@ -27,27 +35,22 @@ function positiveInteger(value: unknown, maximum: number): value is number {
   return Number.isSafeInteger(value) && Number(value) > 0 && Number(value) <= maximum;
 }
 
-export function validateQuoteSubmission(input: unknown):
-  | { success: true; value: QuoteSubmission }
-  | { success: false; error: string } {
-  if (!input || typeof input !== "object" || Array.isArray(input)) {
-    return { success: false, error: "Os dados do orçamento são inválidos." };
-  }
+function asRecord(input: unknown): Record<string, unknown> | null {
+  return input && typeof input === "object" && !Array.isArray(input)
+    ? input as Record<string, unknown>
+    : null;
+}
 
-  const raw = input as Record<string, unknown>;
+function validateQuotePricingCore(raw: Record<string, unknown>): ValidationResult<QuotePricingSubmission> {
   const serviceSlug = trimmedString(raw.serviceSlug);
   const serviceName = trimmedString(raw.serviceName);
   const product = trimmedString(raw.product);
-  const requestType = raw.requestType;
 
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(serviceSlug) || serviceSlug.length > 80) {
     return { success: false, error: "Selecione um serviço válido." };
   }
   if (!serviceName || serviceName.length > 120) {
     return { success: false, error: "O nome do serviço é obrigatório." };
-  }
-  if (requestType !== "automatic" && requestType !== "whatsapp") {
-    return { success: false, error: "Escolha uma forma válida de solicitar o orçamento." };
   }
   if (!product || product.length > 80) {
     return { success: false, error: "Selecione um produto." };
@@ -56,7 +59,7 @@ export function validateQuoteSubmission(input: unknown):
     return { success: false, error: "Informe uma quantidade entre 1 e 100.000 peças." };
   }
 
-  // Converte também o formato antigo de uma arte para o novo array durante a atualização.
+  // Aceita também o formato antigo de uma arte durante a atualização do formulário.
   const rawEngravings = Array.isArray(raw.engravings)
     ? raw.engravings
     : [{
@@ -72,11 +75,9 @@ export function validateQuoteSubmission(input: unknown):
 
   const engravings: QuoteEngravingSubmission[] = [];
   for (const entry of rawEngravings) {
-    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
-      return { success: false, error: "Confira os dados de cada gravação." };
-    }
+    const engraving = asRecord(entry);
+    if (!engraving) return { success: false, error: "Confira os dados de cada gravação." };
 
-    const engraving = entry as Record<string, unknown>;
     const location = trimmedString(engraving.location);
     const fileId = trimmedString(engraving.fileId);
     if (!location || location.length > 80) {
@@ -103,13 +104,35 @@ export function validateQuoteSubmission(input: unknown):
 
   return {
     success: true,
-    value: {
-      serviceSlug,
-      serviceName,
-      requestType,
-      product,
-      quantity: raw.quantity,
-      engravings,
-    },
+    value: { serviceSlug, serviceName, product, quantity: raw.quantity, engravings },
+  };
+}
+
+export function validateQuotePricingSubmission(input: unknown): ValidationResult<QuotePricingSubmission> {
+  const raw = asRecord(input);
+  if (!raw) return { success: false, error: "Os dados do orçamento são inválidos." };
+  return validateQuotePricingCore(raw);
+}
+
+export function validateQuoteSubmission(input: unknown): ValidationResult<QuoteSubmission> {
+  const raw = asRecord(input);
+  if (!raw) return { success: false, error: "Os dados do orçamento são inválidos." };
+
+  const core = validateQuotePricingCore(raw);
+  if (!core.success) return core;
+
+  const requestType = raw.requestType;
+  if (requestType !== "automatic" && requestType !== "whatsapp") {
+    return { success: false, error: "Escolha uma forma válida de solicitar o orçamento." };
+  }
+
+  const customer = validateCustomerSubmission(raw.customer);
+  if (!customer.success) {
+    return { success: false, error: "Confira seus dados de contato. Informe nome, título, mensagem e um telefone ou celular válido." };
+  }
+
+  return {
+    success: true,
+    value: { ...core.value, requestType, customer: customer.value },
   };
 }

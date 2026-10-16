@@ -6,7 +6,28 @@ import engravingMethods from "@/data/engraving-methods.json";
 import { ApplicationError } from "@/server/core/application-error";
 import { getCustomerFilesCollection, getCustomerQuotesCollection } from "@/server/database/mongodb";
 import { calculateQuotePricing } from "@/server/quotes/quote-pricing";
-import { validateQuoteSubmission } from "@/server/quotes/quote-validation";
+import {
+  validateQuotePricingSubmission,
+  validateQuoteSubmission,
+} from "@/server/quotes/quote-validation";
+
+export function getCustomerQuotePricingPreview(payload: unknown) {
+  const validation = validateQuotePricingSubmission(payload);
+  if (!validation.success) throw new ApplicationError(validation.error, 400);
+
+  const input = validation.value;
+  const service = engravingMethods.find((item) => item.slug === input.serviceSlug);
+  if (!service || service.name !== input.serviceName || !service.products.includes(input.product)) {
+    throw new ApplicationError("Confira o serviço e o produto selecionados.", 400);
+  }
+
+  return calculateQuotePricing({
+    serviceSlug: service.slug,
+    product: input.product,
+    quantity: input.quantity,
+    engravings: input.engravings,
+  });
+}
 
 export async function listRecentCustomerQuotes(ownerUserId: string) {
   try {
@@ -70,6 +91,7 @@ export async function createCustomerQuote(ownerUserId: string, payload: unknown)
       serviceSlug: service.slug,
       serviceName: service.name,
       requestType: input.requestType,
+      customer: input.customer,
       product: input.product,
       quantity: input.quantity,
       pricing,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { AnimatePresence } from "motion/react";
 import { FaCloudUploadAlt, FaTrashAlt, FaWhatsapp } from "react-icons/fa";
 import { AccountMenu } from "@/components/account-menu";
@@ -11,18 +11,27 @@ import type { AccountUser } from "@/lib/account";
 import {
   SAddEngravingButton,
   SArtworkCard,
+  SArtworkFileBadge,
+  SArtworkHeader,
   SArtworkLegend,
   SCalculateButton,
-  SProductOption,
-  SProductOptions,
   SQuoteActions,
   SQuoteCard,
+  SQuoteContact,
+  SQuoteContactGrid,
+  SQuoteContactHeading,
   SQuoteDimensions,
   SQuoteEngravings,
   SQuoteField,
   SQuoteForm,
   SQuoteHeading,
   SQuoteNotice,
+  SQuotePreview,
+  SQuotePreviewAmount,
+  SQuotePreviewLabel,
+  SQuotePreviewMessage,
+  SQuoteSaveButton,
+  SQuoteTopFields,
   SQuoteUpload,
   SRemoveEngravingButton,
   SWhatsAppQuoteButton,
@@ -51,6 +60,16 @@ type EngravingDraft = {
   needsReselect: boolean;
 };
 
+type ContactDraft = {
+  name: string;
+  company: string;
+  phone: string;
+  mobile: string;
+  cnpj: string;
+  title: string;
+  message: string;
+};
+
 type StoredEngravingDraft = {
   id?: string;
   location?: string;
@@ -65,6 +84,7 @@ type StoredDraft = {
   product?: string;
   quantity?: string;
   engravings?: StoredEngravingDraft[];
+  customer?: Partial<ContactDraft>;
   requestType?: QuoteRequestType;
   hadFile?: boolean;
   // Compatibility with drafts written by the previous single-art form.
@@ -73,10 +93,34 @@ type StoredDraft = {
   colorCount?: string;
 };
 
+type QuotePricingPreview = {
+  status: "calculated" | "manual-review";
+  currency: "BRL";
+  totalCents?: number;
+  reason?: string;
+};
+
+type PreviewState =
+  | { status: "idle"; key: string }
+  | { status: "loading"; key: string }
+  | { status: "calculated"; key: string; pricing: QuotePricingPreview }
+  | { status: "manual-review"; key: string; pricing: QuotePricingPreview }
+  | { status: "error"; key: string; message: string };
+
 const acceptedFileExtensions = ["jpg", "svg", "cdr", "pdf", "png"];
 const acceptedFileTypes = ".jpg,.svg,.cdr,.pdf,.png";
 const maxFileBytes = 5_000_000;
 const maxEngravings = 100;
+
+const emptyCustomer: ContactDraft = {
+  name: "",
+  company: "",
+  phone: "",
+  mobile: "",
+  cnpj: "",
+  title: "",
+  message: "",
+};
 
 function draftStorageKey(slug: string) {
   return `brasil-gravacoes:service-quote:${slug}`;
@@ -95,6 +139,18 @@ function createEngravingDraft(id: string): EngravingDraft {
   };
 }
 
+function asCustomerDraft(input: Partial<ContactDraft> | undefined): ContactDraft {
+  return {
+    name: typeof input?.name === "string" ? input.name : "",
+    company: typeof input?.company === "string" ? input.company : "",
+    phone: typeof input?.phone === "string" ? input.phone : "",
+    mobile: typeof input?.mobile === "string" ? input.mobile : "",
+    cnpj: typeof input?.cnpj === "string" ? input.cnpj : "",
+    title: typeof input?.title === "string" ? input.title : "",
+    message: typeof input?.message === "string" ? input.message : "",
+  };
+}
+
 export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
   const { data: session, isPending: sessionPending } = authClient.useSession();
   const formRef = useRef<HTMLFormElement>(null);
@@ -106,6 +162,11 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
   const [engravings, setEngravings] = useState<EngravingDraft[]>([
     createEngravingDraft("engraving-1"),
   ]);
+  const [customer, setCustomer] = useState<ContactDraft>(emptyCustomer);
+  const [pricingPreview, setPricingPreview] = useState<PreviewState>({
+    status: "idle",
+    key: "",
+  });
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState("");
@@ -125,6 +186,11 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
       }
     : null;
 
+  const effectiveCustomer = useMemo(() => ({
+    ...customer,
+    name: customer.name || session?.user?.name || "",
+  }), [customer, session?.user?.name]);
+
   useEffect(() => {
     const restoreTimer = window.setTimeout(() => {
       try {
@@ -133,6 +199,7 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
           const draft = JSON.parse(stored) as StoredDraft;
           if (draft.product && service.products.includes(draft.product)) setProduct(draft.product);
           if (typeof draft.quantity === "string") setQuantity(draft.quantity);
+          setCustomer(asCustomerDraft(draft.customer));
 
           const savedEngravings = Array.isArray(draft.engravings) && draft.engravings.length > 0
             ? draft.engravings
@@ -171,6 +238,74 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
 
     return () => window.clearTimeout(restoreTimer);
   }, [service.products, service.slug]);
+
+  const previewRequestBody = useMemo(() => {
+    const validQuantity = Number.isSafeInteger(Number(quantity)) && Number(quantity) > 0;
+    const completeEngravings = engravings.every((item) => (
+      item.location.trim()
+      && Number.isSafeInteger(Number(item.logoWidthMm))
+      && Number(item.logoWidthMm) > 0
+      && Number.isSafeInteger(Number(item.logoHeightMm))
+      && Number(item.logoHeightMm) > 0
+      && Number.isSafeInteger(Number(item.colorCount))
+      && Number(item.colorCount) > 0
+    ));
+
+    if (!validQuantity || !completeEngravings || !product) return "";
+    return JSON.stringify({
+      serviceSlug: service.slug,
+      serviceName: service.name,
+      product,
+      quantity: Number(quantity),
+      engravings: engravings.map((item) => ({
+        location: item.location,
+        logoWidthMm: Number(item.logoWidthMm),
+        logoHeightMm: Number(item.logoHeightMm),
+        colorCount: Number(item.colorCount),
+      })),
+    });
+  }, [engravings, product, quantity, service.name, service.slug]);
+
+  useEffect(() => {
+    if (!draftLoaded || !service.supportsPreQuote || !previewRequestBody) return;
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setPricingPreview({ status: "loading", key: previewRequestBody });
+      try {
+        const response = await fetch("/api/quotes/preview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+          body: previewRequestBody,
+        });
+        const result = await response.json().catch(() => ({})) as {
+          error?: string;
+          pricing?: QuotePricingPreview;
+        };
+        if (!response.ok || !result.pricing) {
+          throw new Error(result.error || "Não foi possível calcular a prévia.");
+        }
+        if (result.pricing.status === "calculated") {
+          setPricingPreview({ status: "calculated", key: previewRequestBody, pricing: result.pricing });
+        } else {
+          setPricingPreview({ status: "manual-review", key: previewRequestBody, pricing: result.pricing });
+        }
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") return;
+        setPricingPreview({
+          status: "error",
+          key: previewRequestBody,
+          message: error instanceof Error ? error.message : "Não foi possível calcular a prévia.",
+        });
+      }
+    }, 350);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [draftLoaded, previewRequestBody, service.supportsPreQuote]);
 
   const updateEngraving = useCallback((id: string, patch: Partial<EngravingDraft>) => {
     setEngravings((current) => current.map((item) => item.id === id ? { ...item, ...patch } : item));
@@ -213,6 +348,7 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
           serviceSlug: service.slug,
           serviceName: service.name,
           requestType,
+          customer: effectiveCustomer,
           product,
           quantity: Number(quantity),
           engravings: submittedEngravings,
@@ -222,12 +358,7 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
         error?: string;
         number?: string;
         serviceName?: string;
-        pricing?: {
-          status?: "calculated" | "manual-review";
-          currency?: "BRL";
-          totalCents?: number;
-          reason?: string;
-        };
+        pricing?: QuotePricingPreview;
       };
       if (!response.ok) throw new Error(result.error || "Não foi possível enviar o orçamento.");
 
@@ -257,7 +388,7 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
       setIsSubmitting(false);
       setUploadProgress("");
     }
-  }, [engravings, product, quantity, service.name, service.slug, session?.user, updateEngraving]);
+  }, [effectiveCustomer, engravings, product, quantity, service.name, service.slug, session?.user, updateEngraving]);
 
   useEffect(() => {
     if (!draftLoaded || sessionPending || !session?.user) return;
@@ -273,13 +404,30 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
     }
 
     pendingRequestRef.current = null;
-    window.sessionStorage.removeItem(draftStorageKey(service.slug));
     const submitTimer = window.setTimeout(() => {
       setAccountMenuOpen(false);
       void submitRequest(pendingRequest);
     }, 0);
     return () => window.clearTimeout(submitTimer);
-  }, [draftLoaded, engravings, service.slug, session?.user, sessionPending, submitRequest]);
+  }, [draftLoaded, engravings, session?.user, sessionPending, submitRequest]);
+
+  function saveCurrentDraft(requestType?: QuoteRequestType) {
+    window.sessionStorage.setItem(draftStorageKey(service.slug), JSON.stringify({
+      product,
+      quantity,
+      customer,
+      engravings: engravings.map((item) => ({
+        id: item.id,
+        location: item.location,
+        logoWidthMm: item.logoWidthMm,
+        logoHeightMm: item.logoHeightMm,
+        colorCount: item.colorCount,
+        fileId: item.fileId,
+        hadFile: Boolean(item.file || item.fileId || item.needsReselect),
+      })),
+      ...(requestType ? { requestType } : {}),
+    } satisfies StoredDraft));
+  }
 
   function handleRequest(requestType: QuoteRequestType) {
     if (!formRef.current?.reportValidity()) return;
@@ -289,19 +437,7 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
 
     if (!session?.user) {
       pendingRequestRef.current = requestType;
-      window.sessionStorage.setItem(draftStorageKey(service.slug), JSON.stringify({
-        product,
-        quantity,
-        engravings: engravings.map((item) => ({
-          id: item.id,
-          location: item.location,
-          logoWidthMm: item.logoWidthMm,
-          logoHeightMm: item.logoHeightMm,
-          colorCount: item.colorCount,
-          hadFile: Boolean(item.file || item.fileId || item.needsReselect),
-        })),
-        requestType,
-      } satisfies StoredDraft));
+      saveCurrentDraft(requestType);
       setAccountMenuOpen(true);
       return;
     }
@@ -357,7 +493,7 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
   function closeAccountMenu() {
     setAccountMenuOpen(false);
     pendingRequestRef.current = null;
-    window.sessionStorage.removeItem(draftStorageKey(service.slug));
+    saveCurrentDraft();
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -365,61 +501,108 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
     if (service.supportsPreQuote) handleRequest("automatic");
   }
 
+  const previewIsCurrent = pricingPreview.key === previewRequestBody;
+  const previewAmount = !service.supportsPreQuote
+    ? "Sob consulta"
+    : !previewRequestBody
+      ? "—"
+      : !previewIsCurrent || pricingPreview.status === "loading"
+        ? "Calculando…"
+        : pricingPreview.status === "calculated"
+          ? new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" })
+              .format((pricingPreview.pricing.totalCents ?? 0) / 100)
+          : pricingPreview.status === "manual-review"
+            ? "Sob consulta"
+            : "—";
+  const previewMessage = !service.supportsPreQuote
+    ? "Este serviço será calculado pela equipe."
+    : !previewRequestBody
+      ? "Preencha a quantidade e os detalhes das gravações para ver o valor."
+      : !previewIsCurrent || pricingPreview.status === "loading"
+        ? "Calculando pré-orçamento…"
+        : pricingPreview.status === "calculated"
+          ? "Prévia calculada com base na tabela atual. O valor final será confirmado pela equipe."
+          : pricingPreview.status === "manual-review"
+            ? pricingPreview.pricing.reason || "A equipe finalizará o orçamento."
+            : pricingPreview.status === "error"
+              ? pricingPreview.message
+              : "Preencha os dados da gravação para ver o valor.";
+
   return (
     <>
       <SQuoteCard aria-labelledby="service-quote-title">
         <SQuoteHeading>
-          <div>
-            <h2 id="service-quote-title">Monte seu pedido</h2>
-            <p>Informe os detalhes para solicitar um orçamento de {service.name}.</p>
-          </div>
+          <h2 id="service-quote-title">Orçamento de {service.name}</h2>
+          <p>Descreva cada arte para calcular ou solicitar seu orçamento.</p>
         </SQuoteHeading>
 
         <SQuoteForm onSubmit={handleSubmit} ref={formRef}>
-          <div>
-            <SQuoteField as="div">Produto</SQuoteField>
-            <SProductOptions aria-label="Selecione o produto">
-              {service.products.map((item) => (
-                <SProductOption
-                  aria-pressed={product === item}
-                  key={item}
-                  onClick={() => setProduct(item)}
-                  type="button"
-                  $selected={product === item}
-                >
-                  {item}
-                </SProductOption>
-              ))}
-            </SProductOptions>
-          </div>
+          <SQuoteTopFields>
+            <SQuoteField>
+              Produto
+              <select
+                onChange={(event) => setProduct(event.target.value)}
+                required
+                value={product}
+              >
+                {service.products.map((item) => <option key={item} value={item}>{item}</option>)}
+              </select>
+            </SQuoteField>
 
-          <SQuoteField>
-            Quantidade de peças
-            <input
-              max="100000"
-              min="1"
-              onChange={(event) => setQuantity(event.target.value)}
-              placeholder="Digite a quantidade de produtos"
-              required
-              type="number"
-              value={quantity}
-            />
-          </SQuoteField>
+            <SQuoteField>
+              Quantidade de peças
+              <input
+                inputMode="numeric"
+                max="100000"
+                min="1"
+                onChange={(event) => setQuantity(event.target.value)}
+                placeholder="Digite a quantidade de produtos"
+                required
+                type="number"
+                value={quantity}
+              />
+            </SQuoteField>
+          </SQuoteTopFields>
 
           <SQuoteEngravings aria-label="Artes e gravações do pedido">
             {engravings.map((engraving, index) => (
-              <SArtworkCard key={engraving.id}>
-                <SArtworkLegend>Gravação {index + 1}</SArtworkLegend>
-                {engravings.length > 1 && (
-                  <SRemoveEngravingButton
-                    aria-label={`Remover gravação ${index + 1}`}
+              <SArtworkCard aria-label={`Gravação ${index + 1}`} key={engraving.id}>
+                <SArtworkHeader>
+                  {engravings.length > 1 && (
+                    <SRemoveEngravingButton
+                      aria-label={`Remover gravação ${index + 1}`}
+                      disabled={isSubmitting}
+                      onClick={() => removeEngraving(engraving.id)}
+                      type="button"
+                    >
+                      <FaTrashAlt aria-hidden="true" />
+                      Remover
+                    </SRemoveEngravingButton>
+                  )}
+                  <SArtworkLegend>Gravação {index + 1}</SArtworkLegend>
+                </SArtworkHeader>
+
+                <SQuoteUpload $disabled={isSubmitting}>
+                  <strong>
+                    <FaCloudUploadAlt aria-hidden="true" />
+                    {uploadProgress.startsWith(`Arte ${index + 1}:`) || uploadProgress.startsWith(`Enviando arte ${index + 1}:`)
+                      ? uploadProgress
+                      : engraving.file?.name || (engraving.fileId ? "Arte enviada" : "Anexe sua arte")}
+                  </strong>
+                  <span>Máximo 5 MB · 1 arquivo por gravação · até 15 arquivos por dia</span>
+                  <span>CDR · SVG · PDF · JPG · PNG</span>
+                  <input
+                    accept={acceptedFileTypes}
+                    aria-label={`Anexar arte da gravação ${index + 1}`}
                     disabled={isSubmitting}
-                    onClick={() => removeEngraving(engraving.id)}
-                    type="button"
-                  >
-                    <FaTrashAlt aria-hidden="true" />
-                    Remover
-                  </SRemoveEngravingButton>
+                    onChange={(event) => selectFile(event, engraving.id)}
+                    type="file"
+                  />
+                </SQuoteUpload>
+                {(engraving.file || engraving.fileId) && (
+                  <SArtworkFileBadge aria-label="Arte anexada">
+                    {engraving.file?.name.split(".").pop()?.toUpperCase() || "ARTE"}
+                  </SArtworkFileBadge>
                 )}
 
                 <SQuoteField>
@@ -433,21 +616,6 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
                   />
                 </SQuoteField>
 
-                <SQuoteUpload $disabled={isSubmitting}>
-                  <strong>
-                    <FaCloudUploadAlt aria-hidden="true" /> {uploadProgress.startsWith(`Arte ${index + 1}:`) || uploadProgress.startsWith(`Enviando arte ${index + 1}:`)
-                      ? uploadProgress
-                      : engraving.file?.name || (engraving.fileId ? "Arte enviada" : "Anexe sua arte")}
-                  </strong>
-                  <span>JPG, SVG, CDR, PDF ou PNG · até 5 MB · 1 por gravação · 15 arquivos por dia</span>
-                  <input
-                    accept={acceptedFileTypes}
-                    disabled={isSubmitting}
-                    onChange={(event) => selectFile(event, engraving.id)}
-                    type="file"
-                  />
-                </SQuoteUpload>
-
                 <SQuoteDimensions>
                   <SQuoteField>
                     Largura do logo (mm)
@@ -457,7 +625,7 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
                       onChange={(event) => updateEngraving(engraving.id, { logoWidthMm: event.target.value })}
                       placeholder={productLogoLimits?.maxWidthMm
                         ? `Máx. ${productLogoLimits.maxWidthMm} mm`
-                        : "Ex.: 70 mm"}
+                        : "Digite a largura em mm"}
                       required
                       type="number"
                       value={engraving.logoWidthMm}
@@ -469,9 +637,7 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
                       max={maxLogoHeightMm}
                       min="1"
                       onChange={(event) => updateEngraving(engraving.id, { logoHeightMm: event.target.value })}
-                      placeholder={productLogoLimits
-                        ? `Máx. ${productLogoLimits.maxHeightMm} mm`
-                        : "Ex.: 60 mm"}
+                      placeholder={`Máx. ${maxLogoHeightMm} mm`}
                       required
                       type="number"
                       value={engraving.logoHeightMm}
@@ -501,24 +667,127 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
             </SAddEngravingButton>
           </SQuoteEngravings>
 
+          <SQuotePreview aria-live="polite" aria-atomic="true">
+            <SQuotePreviewLabel>Pré orçamento</SQuotePreviewLabel>
+            <SQuotePreviewAmount>{service.supportsPreQuote ? previewAmount : "Sob consulta"}</SQuotePreviewAmount>
+            <SQuotePreviewMessage>{service.supportsPreQuote
+              ? previewMessage
+              : "Este serviço será calculado pela equipe."}</SQuotePreviewMessage>
+          </SQuotePreview>
+
+          <SQuoteContact aria-labelledby="quote-contact-title">
+            <SQuoteContactHeading id="quote-contact-title">Seus dados</SQuoteContactHeading>
+            <SQuoteContactGrid>
+              <SQuoteField>
+                Nome
+                <input
+                  autoComplete="name"
+                  maxLength={120}
+                  onChange={(event) => setCustomer((current) => ({ ...current, name: event.target.value }))}
+                  placeholder="Digite o seu nome"
+                  required
+                value={customer.name || session?.user?.name || ""}
+                />
+              </SQuoteField>
+              <SQuoteField>
+                Empresa
+                <input
+                  autoComplete="organization"
+                  maxLength={160}
+                  onChange={(event) => setCustomer((current) => ({ ...current, company: event.target.value }))}
+                  placeholder="Digite o nome da empresa"
+                  value={customer.company}
+                />
+              </SQuoteField>
+              <SQuoteField>
+                Telefone
+                <input
+                  autoComplete="tel"
+                  maxLength={32}
+                  onChange={(event) => setCustomer((current) => ({ ...current, phone: event.target.value }))}
+                  placeholder="Digite seu número"
+                  required={!customer.mobile.trim()}
+                  type="tel"
+                  value={customer.phone}
+                />
+              </SQuoteField>
+              <SQuoteField>
+                Celular
+                <input
+                  autoComplete="tel-national"
+                  maxLength={32}
+                  onChange={(event) => setCustomer((current) => ({ ...current, mobile: event.target.value }))}
+                  placeholder="Digite seu número"
+                  required={!customer.phone.trim()}
+                  type="tel"
+                  value={customer.mobile}
+                />
+              </SQuoteField>
+              <SQuoteField>
+                CNPJ
+                <input
+                  autoComplete="off"
+                  inputMode="numeric"
+                  maxLength={18}
+                  onChange={(event) => setCustomer((current) => ({ ...current, cnpj: event.target.value }))}
+                  placeholder="Digite seu CNPJ"
+                  value={customer.cnpj}
+                />
+              </SQuoteField>
+              <SQuoteField>
+                Título
+                <input
+                  maxLength={160}
+                  onChange={(event) => setCustomer((current) => ({ ...current, title: event.target.value }))}
+                  placeholder="Adicione um título para o orçamento"
+                  required
+                  value={customer.title}
+                />
+              </SQuoteField>
+            </SQuoteContactGrid>
+            <SQuoteField>
+              Mensagem
+              <textarea
+                maxLength={3000}
+                onChange={(event) => setCustomer((current) => ({ ...current, message: event.target.value }))}
+                placeholder="Adicione detalhes e observações"
+                required
+                value={customer.message}
+              />
+            </SQuoteField>
+          </SQuoteContact>
+
+          {!service.supportsPreQuote && (
+            <SWhatsAppQuoteButton
+              disabled={isSubmitting || !draftLoaded || sessionPending}
+              onClick={() => handleRequest("whatsapp")}
+              type="button"
+            >
+              <FaWhatsapp aria-hidden="true" />
+              Pedir orçamento pelo WhatsApp
+            </SWhatsAppQuoteButton>
+          )}
+
           <SQuoteActions>
-            {!service.supportsPreQuote && (
-              <SWhatsAppQuoteButton
-                disabled={isSubmitting || !draftLoaded}
-                onClick={() => handleRequest("whatsapp")}
-                type="button"
-              >
-                <FaWhatsapp aria-hidden="true" />
-                Pedir orçamento pelo WhatsApp
-              </SWhatsAppQuoteButton>
-            )}
+            <SQuoteSaveButton
+              disabled={!draftLoaded || isSubmitting}
+              onClick={() => {
+                saveCurrentDraft();
+                setNotice("Rascunho salvo nesta sessão.");
+                setNoticeIsError(false);
+                setWhatsAppUrl("");
+              }}
+              type="button"
+            >
+              Salvar
+            </SQuoteSaveButton>
             <SCalculateButton
               $unavailable={!service.supportsPreQuote}
               aria-disabled={!service.supportsPreQuote ? "true" : undefined}
-              disabled={isSubmitting || !service.supportsPreQuote || !draftLoaded}
-              type="submit"
+              disabled={isSubmitting || !service.supportsPreQuote || !draftLoaded || sessionPending}
+              type={service.supportsPreQuote ? "submit" : "button"}
             >
-              {isSubmitting ? "Enviando pedido..." : "Calcular orçamento"}
+              {isSubmitting ? "Enviando pedido..." : service.supportsPreQuote ? "Gerar pedido" : "Calcular orçamento"}
             </SCalculateButton>
           </SQuoteActions>
 

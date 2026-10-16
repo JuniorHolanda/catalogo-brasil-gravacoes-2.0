@@ -1,15 +1,15 @@
 {
-  "tableId": "tampografia-v1",
-  "version": 1,
+  "tableId": "tampografia-v2",
+  "version": 2,
   "serviceSlug": "tampografia",
   "currency": "BRL",
   "baseColorCount": 1,
   "groups": [
     {
-      "id": "tampografia-logo-7mm",
+      "id": "tampografia-logo-7x60mm",
       "products": ["Caneta", "Lápis", "Lapiseira", "Canudo"],
-      "maxLogoWidthMm": null,
-      "maxLogoHeightMm": 7,
+      "maxLogoWidthMm": 7,
+      "maxLogoHeightMm": 60,
       "tiers": [
         { "minQuantity": 1, "maxQuantity": 1000, "kind": "fixedBatch", "amountCents": 17500 },
         { "minQuantity": 1001, "maxQuantity": 5000, "kind": "perPiece", "amountCents": 17 },

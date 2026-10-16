@@ -10,16 +10,17 @@ O navegador envia o `slug` e o nome exibido para `POST /api/quotes`. No servidor
 
 1. A pessoa escolhe produto e quantidade e adiciona uma ou mais gravações. Cada gravação tem lado/local, dimensões, quantidade de cores e um arquivo opcional.
 2. Cada arquivo passa pela API autenticada, respeitando o limite de 5 MB, é associado à conta e fica no bucket privado R2.
-3. Sem sessão, o site abre o cadastro/entrada. O pedido continua após o cadastro por e-mail; se o acesso Google recarregar a página, os campos do pedido ficam temporariamente na sessão do navegador.
-4. `POST /api/quotes` valida os campos e grava o pedido na coleção `customerQuotes`, associado ao ID da sessão. A lista `engravings` é salva como um array de documentos dentro do pedido no MongoDB, com as dimensões, cores, lado/local e referência do arquivo de cada gravação. A resposta também guarda a cópia do cálculo e a versão da tabela usadas naquele pedido.
-5. `GET /api/quotes` devolve apenas os três pedidos mais recentes da conta, usados no menu do usuário.
+3. A prévia é consultada em `POST /api/quotes/preview` e calculada no servidor. Essa rota não grava pedido nem aceita um preço calculado pelo navegador como oficial.
+4. O formulário pode guardar um rascunho em `sessionStorage` no navegador. Sem sessão, ao gerar o pedido, o site abre o cadastro/entrada. O pedido continua após o cadastro por e-mail; se o acesso Google recarregar a página, os campos ficam temporariamente na sessão do navegador.
+5. `POST /api/quotes` valida os campos de contato e orçamento e grava o pedido na coleção `customerQuotes`, associado ao ID da sessão. O documento inclui um retrato dos dados de contato, um array `engravings` com dimensões, cores, lado/local e referência do arquivo, além da cópia do cálculo e versão da tabela usadas naquele pedido.
+6. `GET /api/quotes` devolve apenas os três pedidos mais recentes da conta, usados no menu do usuário.
 
 A gravação exige sessão autenticada. O servidor ignora IDs de usuário vindos do formulário e verifica se o arquivo anexado pertence à mesma conta. A API só permite anexar arquivos completos e existentes na coleção `customerFiles`.
 
 ## Coleções usadas
 
 - `user`, `session` e outras coleções do Better Auth: contas e sessões.
-- `customerQuotes`: referência, usuário, serviço, produto, quantidade, array `engravings`, status e datas. O MongoDB guarda esses objetos como documentos BSON, sem serializar o array como uma string JSON.
+- `customerQuotes`: referência, usuário, serviço, retrato dos dados de contato, produto, quantidade, array `engravings`, status e datas. O MongoDB guarda esses objetos como documentos BSON, sem serializar o array como uma string JSON.
 - `customerFiles`: metadados dos arquivos privados guardados no R2.
 - `customers`: cadastros enviados pelo formulário de contato.
 
@@ -29,6 +30,15 @@ Um pedido com duas artes fica estruturado assim na coleção `customerQuotes`:
 
 ```json
 {
+  "customer": {
+    "name": "Nome do cliente",
+    "company": "Empresa",
+    "phone": "1133334444",
+    "mobile": "11999998888",
+    "cnpj": "12345678000199",
+    "title": "Gravação em suporte",
+    "message": "Detalhes do pedido"
+  },
   "product": "Suporte retrátil para celular",
   "quantity": 100,
   "engravings": [
@@ -50,8 +60,8 @@ Um pedido com duas artes fica estruturado assim na coleção `customerQuotes`:
   "pricing": {
     "status": "calculated",
     "currency": "BRL",
-    "tableId": "tampografia-v1",
-    "tableVersion": 1,
+    "tableId": "tampografia-v2",
+    "tableVersion": 2,
     "totalCents": 33000,
     "lines": [
       {
@@ -86,7 +96,7 @@ Os arquivos continuam no R2; o documento guarda as referências. A ordem dos obj
 
 ## Regras de orçamento
 
-`src/server/quotes/pricing-table.json` contém a primeira tabela automática: Tampografia, com o grupo de logo de 7 mm e o grupo de 40 × 40 mm. No primeiro grupo, os produtos precisam respeitar a altura máxima de 7 mm; no segundo, largura e altura ficam limitadas a 40 mm. A primeira faixa de cada grupo é tratada como valor fechado do lote; as demais são valores por peça. Cada gravação é calculada separadamente e somada ao pedido.
+`src/server/quotes/pricing-table.json` contém a primeira tabela automática: Tampografia, com o grupo de logo de 7 × 60 mm e o grupo de 40 × 40 mm. No primeiro grupo, os produtos precisam respeitar largura máxima de 7 mm e altura máxima de 60 mm; no segundo, largura e altura ficam limitadas a 40 mm. A primeira faixa de cada grupo é tratada como valor fechado do lote; as demais são valores por peça. Cada gravação é calculada separadamente e somada ao pedido.
 
 As faixas são contínuas: quando uma faixa termina em `N`, a próxima começa em `N + 1` (por exemplo, 1.000 → 1.001). A tabela atual cobre uma cor por gravação. Produtos sem regra, dimensões acima do máximo ou mais de uma cor geram um pedido para análise manual, sem total automático.
 
