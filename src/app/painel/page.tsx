@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { CustomerFilesPanel } from "@/components/customer-files-panel";
-import { getAuth } from "@/lib/auth";
+import { getAuth } from "@/server/auth/auth";
 
 export const runtime = "nodejs";
 

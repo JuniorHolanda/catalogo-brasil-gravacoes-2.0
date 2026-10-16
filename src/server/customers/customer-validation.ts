@@ -1,3 +1,5 @@
+import "server-only";
+
 export type CustomerSubmission = {
   name: string;
   company: string;

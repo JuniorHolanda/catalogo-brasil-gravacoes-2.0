@@ -2,24 +2,29 @@
 
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { AnimatePresence } from "motion/react";
-import { FaCloudUploadAlt, FaWhatsapp } from "react-icons/fa";
+import { FaCloudUploadAlt, FaTrashAlt, FaWhatsapp } from "react-icons/fa";
 import { AccountMenu } from "@/components/account-menu";
 import { authClient } from "@/lib/auth-client";
 import { uploadCustomerFile } from "@/lib/customer-file-upload";
 import { createWhatsAppLink } from "@/lib/whatsapp";
 import type { AccountUser } from "@/lib/account";
 import {
+  SAddEngravingButton,
+  SArtworkCard,
+  SArtworkLegend,
   SCalculateButton,
   SProductOption,
   SProductOptions,
   SQuoteActions,
   SQuoteCard,
   SQuoteDimensions,
+  SQuoteEngravings,
   SQuoteField,
   SQuoteForm,
   SQuoteHeading,
   SQuoteNotice,
   SQuoteUpload,
+  SRemoveEngravingButton,
   SWhatsAppQuoteButton,
 } from "@/styles/service-order.styles";
 
@@ -29,27 +34,65 @@ type ServiceOrderFormProps = {
     name: string;
     supportsPreQuote: boolean;
     products: string[];
+    productLogoLimits?: Record<string, { maxWidthMm: number | null; maxHeightMm: number }>;
   };
 };
 
 type QuoteRequestType = "automatic" | "whatsapp";
 
-type StoredDraft = {
-  product?: string;
-  quantity?: string;
+type EngravingDraft = {
+  id: string;
+  location: string;
+  logoWidthMm: string;
+  logoHeightMm: string;
+  colorCount: string;
+  file: File | null;
+  fileId: string;
+  needsReselect: boolean;
+};
+
+type StoredEngravingDraft = {
+  id?: string;
+  location?: string;
   logoWidthMm?: string;
   logoHeightMm?: string;
   colorCount?: string;
+  fileId?: string;
+  hadFile?: boolean;
+};
+
+type StoredDraft = {
+  product?: string;
+  quantity?: string;
+  engravings?: StoredEngravingDraft[];
   requestType?: QuoteRequestType;
   hadFile?: boolean;
+  // Compatibility with drafts written by the previous single-art form.
+  logoWidthMm?: string;
+  logoHeightMm?: string;
+  colorCount?: string;
 };
 
 const acceptedFileExtensions = ["jpg", "svg", "cdr", "pdf", "png"];
 const acceptedFileTypes = ".jpg,.svg,.cdr,.pdf,.png";
 const maxFileBytes = 5_000_000;
+const maxEngravings = 100;
 
 function draftStorageKey(slug: string) {
   return `brasil-gravacoes:service-quote:${slug}`;
+}
+
+function createEngravingDraft(id: string): EngravingDraft {
+  return {
+    id,
+    location: "Frente",
+    logoWidthMm: "",
+    logoHeightMm: "",
+    colorCount: "1",
+    file: null,
+    fileId: "",
+    needsReselect: false,
+  };
 }
 
 export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
@@ -60,18 +103,18 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [product, setProduct] = useState(service.products[0] ?? "");
   const [quantity, setQuantity] = useState("");
-  const [logoWidthMm, setLogoWidthMm] = useState("");
-  const [logoHeightMm, setLogoHeightMm] = useState("");
-  const [colorCount, setColorCount] = useState("1");
-  const [file, setFile] = useState<File | null>(null);
-  const [fileId, setFileId] = useState("");
-  const [needsReselect, setNeedsReselect] = useState(false);
+  const [engravings, setEngravings] = useState<EngravingDraft[]>([
+    createEngravingDraft("engraving-1"),
+  ]);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState("");
   const [notice, setNotice] = useState("");
   const [noticeIsError, setNoticeIsError] = useState(false);
   const [whatsAppUrl, setWhatsAppUrl] = useState("");
+  const productLogoLimits = service.productLogoLimits?.[product];
+  const maxLogoWidthMm = productLogoLimits?.maxWidthMm ?? 1_000;
+  const maxLogoHeightMm = productLogoLimits?.maxHeightMm ?? 1_000;
 
   const user: AccountUser | null = session?.user
     ? {
@@ -90,16 +133,33 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
           const draft = JSON.parse(stored) as StoredDraft;
           if (draft.product && service.products.includes(draft.product)) setProduct(draft.product);
           if (typeof draft.quantity === "string") setQuantity(draft.quantity);
-          if (typeof draft.logoWidthMm === "string") setLogoWidthMm(draft.logoWidthMm);
-          if (typeof draft.logoHeightMm === "string") setLogoHeightMm(draft.logoHeightMm);
-          if (typeof draft.colorCount === "string") setColorCount(draft.colorCount);
+
+          const savedEngravings = Array.isArray(draft.engravings) && draft.engravings.length > 0
+            ? draft.engravings
+            : [{
+                id: "engraving-1",
+                location: "Frente",
+                logoWidthMm: draft.logoWidthMm,
+                logoHeightMm: draft.logoHeightMm,
+                colorCount: draft.colorCount,
+                hadFile: draft.hadFile,
+              }];
+          const restoredEngravings = savedEngravings.slice(0, maxEngravings).map((item, index) => ({
+            ...createEngravingDraft(item.id || `engraving-${index + 1}`),
+            location: typeof item.location === "string" ? item.location : "Frente",
+            logoWidthMm: typeof item.logoWidthMm === "string" ? item.logoWidthMm : "",
+            logoHeightMm: typeof item.logoHeightMm === "string" ? item.logoHeightMm : "",
+            colorCount: typeof item.colorCount === "string" ? item.colorCount : "1",
+            fileId: typeof item.fileId === "string" ? item.fileId : "",
+            needsReselect: Boolean(item.hadFile || item.fileId),
+          }));
+          setEngravings(restoredEngravings);
+          if (restoredEngravings.some((item) => item.needsReselect)) {
+            setNotice("Por segurança, selecione novamente cada arte anexada depois de entrar.");
+          }
           if (draft.requestType === "automatic" || draft.requestType === "whatsapp") {
             pendingRequestRef.current = draft.requestType;
             setAccountMenuOpen(true);
-          }
-          if (draft.hadFile) {
-            setNeedsReselect(true);
-            setNotice("Entre para continuar. Por segurança, selecione sua arte novamente depois do acesso.");
           }
         }
       } catch {
@@ -112,6 +172,10 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
     return () => window.clearTimeout(restoreTimer);
   }, [service.products, service.slug]);
 
+  const updateEngraving = useCallback((id: string, patch: Partial<EngravingDraft>) => {
+    setEngravings((current) => current.map((item) => item.id === id ? { ...item, ...patch } : item));
+  }, []);
+
   const submitRequest = useCallback(async (requestType: QuoteRequestType) => {
     if (!session?.user || submissionStartedRef.current) return;
     if (!formRef.current?.reportValidity()) return;
@@ -122,13 +186,24 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
     setWhatsAppUrl("");
 
     try {
-      let attachedFileId = fileId;
-      if (file && !attachedFileId) {
-        setUploadProgress(`Enviando ${file.name}`);
-        attachedFileId = await uploadCustomerFile(file, (part, total) => {
-          setUploadProgress(`Enviando ${file.name} (${part}/${total})`);
+      const submittedEngravings = [];
+      for (const [index, engraving] of engravings.entries()) {
+        let attachedFileId = engraving.fileId;
+        if (engraving.file && !attachedFileId) {
+          setUploadProgress(`Enviando arte ${index + 1}: ${engraving.file.name}`);
+          attachedFileId = await uploadCustomerFile(engraving.file, (part, total) => {
+            setUploadProgress(`Arte ${index + 1}: ${part}/${total}`);
+          });
+          updateEngraving(engraving.id, { fileId: attachedFileId });
+        }
+
+        submittedEngravings.push({
+          location: engraving.location,
+          logoWidthMm: Number(engraving.logoWidthMm),
+          logoHeightMm: Number(engraving.logoHeightMm),
+          colorCount: Number(engraving.colorCount),
+          ...(attachedFileId ? { fileId: attachedFileId } : {}),
         });
-        setFileId(attachedFileId);
       }
 
       const response = await fetch("/api/quotes", {
@@ -140,29 +215,40 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
           requestType,
           product,
           quantity: Number(quantity),
-          logoWidthMm: Number(logoWidthMm),
-          logoHeightMm: Number(logoHeightMm),
-          colorCount: Number(colorCount),
-          ...(attachedFileId ? { fileId: attachedFileId } : {}),
+          engravings: submittedEngravings,
         }),
       });
       const result = await response.json().catch(() => ({})) as {
         error?: string;
         number?: string;
         serviceName?: string;
+        pricing?: {
+          status?: "calculated" | "manual-review";
+          currency?: "BRL";
+          totalCents?: number;
+          reason?: string;
+        };
       };
       if (!response.ok) throw new Error(result.error || "Não foi possível enviar o orçamento.");
 
+      const total = result.pricing?.status === "calculated" && typeof result.pricing.totalCents === "number"
+        ? new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" })
+            .format(result.pricing.totalCents / 100)
+        : null;
+      const pricingMessage = total
+        ? ` Total calculado: ${total}.`
+        : ` ${result.pricing?.reason || "A equipe finalizará o orçamento."}`;
       setNotice(requestType === "whatsapp"
-        ? `Pedido ${result.number} registrado para ${result.serviceName}. Continue pelo WhatsApp.`
-        : `Pedido ${result.number} de ${result.serviceName} registrado para análise.`);
+        ? `Pedido ${result.number} registrado para ${result.serviceName}. Continue pelo WhatsApp.${pricingMessage}`
+        : total
+          ? `Orçamento ${result.number} de ${result.serviceName}: ${total}.`
+          : `Pedido ${result.number} de ${result.serviceName} registrado para análise.${pricingMessage}`);
       setNoticeIsError(false);
       if (requestType === "whatsapp") {
         setWhatsAppUrl(createWhatsAppLink(result.serviceName || service.name, result.number));
       }
       window.sessionStorage.removeItem(draftStorageKey(service.slug));
       pendingRequestRef.current = null;
-      setNeedsReselect(false);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Não foi possível enviar o orçamento.");
       setNoticeIsError(true);
@@ -171,17 +257,17 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
       setIsSubmitting(false);
       setUploadProgress("");
     }
-  }, [colorCount, file, fileId, logoHeightMm, logoWidthMm, product, quantity, service.name, service.slug, session?.user]);
+  }, [engravings, product, quantity, service.name, service.slug, session?.user, updateEngraving]);
 
   useEffect(() => {
     if (!draftLoaded || sessionPending || !session?.user) return;
     const pendingRequest = pendingRequestRef.current;
     if (!pendingRequest) return;
 
-    if (needsReselect) {
+    if (engravings.some((item) => item.needsReselect)) {
       const reselectTimer = window.setTimeout(() => {
         setAccountMenuOpen(false);
-        setNotice("Selecione novamente sua arte para continuar com o pedido.");
+        setNotice("Selecione novamente cada arte que deseja anexar para continuar.");
       }, 0);
       return () => window.clearTimeout(reselectTimer);
     }
@@ -193,7 +279,7 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
       void submitRequest(pendingRequest);
     }, 0);
     return () => window.clearTimeout(submitTimer);
-  }, [draftLoaded, needsReselect, service.slug, session?.user, sessionPending, submitRequest]);
+  }, [draftLoaded, engravings, service.slug, session?.user, sessionPending, submitRequest]);
 
   function handleRequest(requestType: QuoteRequestType) {
     if (!formRef.current?.reportValidity()) return;
@@ -206,26 +292,31 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
       window.sessionStorage.setItem(draftStorageKey(service.slug), JSON.stringify({
         product,
         quantity,
-        logoWidthMm,
-        logoHeightMm,
-        colorCount,
+        engravings: engravings.map((item) => ({
+          id: item.id,
+          location: item.location,
+          logoWidthMm: item.logoWidthMm,
+          logoHeightMm: item.logoHeightMm,
+          colorCount: item.colorCount,
+          hadFile: Boolean(item.file || item.fileId || item.needsReselect),
+        })),
         requestType,
-        hadFile: Boolean(file || fileId),
       } satisfies StoredDraft));
       setAccountMenuOpen(true);
       return;
     }
 
-    pendingRequestRef.current = null;
-    if (needsReselect) {
-      setNeedsReselect(false);
-      setFile(null);
-      setFileId("");
+    if (engravings.some((item) => item.needsReselect)) {
+      setNotice("Selecione novamente cada arte anexada para continuar.");
+      setNoticeIsError(true);
+      return;
     }
+
+    pendingRequestRef.current = null;
     void submitRequest(requestType);
   }
 
-  function selectFile(event: ChangeEvent<HTMLInputElement>) {
+  function selectFile(event: ChangeEvent<HTMLInputElement>, engravingId: string) {
     const selectedFile = event.target.files?.[0] ?? null;
     event.target.value = "";
     if (!selectedFile) return;
@@ -237,16 +328,30 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
       return;
     }
     if (selectedFile.size < 1 || selectedFile.size > maxFileBytes) {
-      setNotice("A arte precisa ter até 5 MB.");
+      setNotice("Cada arte pode ter até 5 MB.");
       setNoticeIsError(true);
       return;
     }
 
-    setFile(selectedFile);
-    setFileId("");
-    setNeedsReselect(false);
+    updateEngraving(engravingId, {
+      file: selectedFile,
+      fileId: "",
+      needsReselect: false,
+    });
     setNotice("");
     setNoticeIsError(false);
+  }
+
+  function addEngraving() {
+    if (engravings.length >= maxEngravings) return;
+    setEngravings((current) => [
+      ...current,
+      createEngravingDraft(`engraving-${crypto.randomUUID()}`),
+    ]);
+  }
+
+  function removeEngraving(id: string) {
+    setEngravings((current) => current.length > 1 ? current.filter((item) => item.id !== id) : current);
   }
 
   function closeAccountMenu() {
@@ -301,55 +406,100 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
             />
           </SQuoteField>
 
-          <SQuoteUpload $disabled={isSubmitting}>
-            <strong><FaCloudUploadAlt aria-hidden="true" /> {uploadProgress || file?.name || "Anexe sua arte"}</strong>
-            <span>JPG, SVG, CDR, PDF ou PNG · até 5 MB · até 15 arquivos por dia</span>
-            <input
-              accept={acceptedFileTypes}
-              disabled={isSubmitting}
-              onChange={selectFile}
-              type="file"
-            />
-          </SQuoteUpload>
+          <SQuoteEngravings aria-label="Artes e gravações do pedido">
+            {engravings.map((engraving, index) => (
+              <SArtworkCard key={engraving.id}>
+                <SArtworkLegend>Gravação {index + 1}</SArtworkLegend>
+                {engravings.length > 1 && (
+                  <SRemoveEngravingButton
+                    aria-label={`Remover gravação ${index + 1}`}
+                    disabled={isSubmitting}
+                    onClick={() => removeEngraving(engraving.id)}
+                    type="button"
+                  >
+                    <FaTrashAlt aria-hidden="true" />
+                    Remover
+                  </SRemoveEngravingButton>
+                )}
 
-          <SQuoteDimensions>
-            <SQuoteField>
-              Largura do logo (mm)
-              <input
-                max="1000"
-                min="1"
-                onChange={(event) => setLogoWidthMm(event.target.value)}
-                placeholder="Ex.: 70 mm"
-                required
-                type="number"
-                value={logoWidthMm}
-              />
-            </SQuoteField>
-            <SQuoteField>
-              Altura do logo (mm)
-              <input
-                max="1000"
-                min="1"
-                onChange={(event) => setLogoHeightMm(event.target.value)}
-                placeholder="Ex.: 60 mm"
-                required
-                type="number"
-                value={logoHeightMm}
-              />
-            </SQuoteField>
-          </SQuoteDimensions>
+                <SQuoteField>
+                  Lado ou local da gravação
+                  <input
+                    maxLength={80}
+                    onChange={(event) => updateEngraving(engraving.id, { location: event.target.value })}
+                    placeholder="Ex.: frente, verso ou lateral"
+                    required
+                    value={engraving.location}
+                  />
+                </SQuoteField>
 
-          <SQuoteField>
-            Quantidade de cores
-            <input
-              max="16"
-              min="1"
-              onChange={(event) => setColorCount(event.target.value)}
-              required
-              type="number"
-              value={colorCount}
-            />
-          </SQuoteField>
+                <SQuoteUpload $disabled={isSubmitting}>
+                  <strong>
+                    <FaCloudUploadAlt aria-hidden="true" /> {uploadProgress.startsWith(`Arte ${index + 1}:`) || uploadProgress.startsWith(`Enviando arte ${index + 1}:`)
+                      ? uploadProgress
+                      : engraving.file?.name || (engraving.fileId ? "Arte enviada" : "Anexe sua arte")}
+                  </strong>
+                  <span>JPG, SVG, CDR, PDF ou PNG · até 5 MB · 1 por gravação · 15 arquivos por dia</span>
+                  <input
+                    accept={acceptedFileTypes}
+                    disabled={isSubmitting}
+                    onChange={(event) => selectFile(event, engraving.id)}
+                    type="file"
+                  />
+                </SQuoteUpload>
+
+                <SQuoteDimensions>
+                  <SQuoteField>
+                    Largura do logo (mm)
+                    <input
+                      max={maxLogoWidthMm}
+                      min="1"
+                      onChange={(event) => updateEngraving(engraving.id, { logoWidthMm: event.target.value })}
+                      placeholder={productLogoLimits?.maxWidthMm
+                        ? `Máx. ${productLogoLimits.maxWidthMm} mm`
+                        : "Ex.: 70 mm"}
+                      required
+                      type="number"
+                      value={engraving.logoWidthMm}
+                    />
+                  </SQuoteField>
+                  <SQuoteField>
+                    Altura do logo (mm)
+                    <input
+                      max={maxLogoHeightMm}
+                      min="1"
+                      onChange={(event) => updateEngraving(engraving.id, { logoHeightMm: event.target.value })}
+                      placeholder={productLogoLimits
+                        ? `Máx. ${productLogoLimits.maxHeightMm} mm`
+                        : "Ex.: 60 mm"}
+                      required
+                      type="number"
+                      value={engraving.logoHeightMm}
+                    />
+                  </SQuoteField>
+                </SQuoteDimensions>
+
+                <SQuoteField>
+                  Quantidade de cores
+                  <input
+                    max="16"
+                    min="1"
+                    onChange={(event) => updateEngraving(engraving.id, { colorCount: event.target.value })}
+                    required
+                    type="number"
+                    value={engraving.colorCount}
+                  />
+                </SQuoteField>
+              </SArtworkCard>
+            ))}
+            <SAddEngravingButton
+              disabled={isSubmitting || engravings.length >= maxEngravings}
+              onClick={addEngraving}
+              type="button"
+            >
+              + gravação
+            </SAddEngravingButton>
+          </SQuoteEngravings>
 
           <SQuoteActions>
             {!service.supportsPreQuote && (
@@ -372,8 +522,8 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
             </SCalculateButton>
           </SQuoteActions>
 
-          {needsReselect && !session?.user && (
-            <SQuoteNotice role="status">Depois de entrar, selecione novamente a arte que deseja anexar.</SQuoteNotice>
+          {engravings.some((item) => item.needsReselect) && !session?.user && (
+            <SQuoteNotice role="status">Depois de entrar, selecione novamente cada arte que deseja anexar.</SQuoteNotice>
           )}
           {notice && <SQuoteNotice $error={noticeIsError} role="status">
             {notice}

@@ -1,6 +1,7 @@
 import "server-only";
 import { MongoClient, MongoServerError, type Collection } from "mongodb";
-import type { CustomerSubmission } from "@/lib/customer-validation";
+import type { CustomerSubmission } from "@/server/customers/customer-validation";
+import type { QuotePricingSnapshot } from "@/server/quotes/quote-pricing";
 
 export type CustomerRecord = CustomerSubmission & {
   status: "new" | "contacted" | "converted" | "archived";
@@ -39,10 +40,14 @@ export type CustomerQuoteRecord = {
   requestType: "automatic" | "whatsapp";
   product: string;
   quantity: number;
-  logoWidthMm: number;
-  logoHeightMm: number;
-  colorCount: number;
-  customerFileId?: string;
+  pricing: QuotePricingSnapshot;
+  engravings: Array<{
+    location: string;
+    logoWidthMm: number;
+    logoHeightMm: number;
+    colorCount: number;
+    customerFileId?: string;
+  }>;
   status: "awaiting" | "producing" | "problem";
   createdAt: Date;
   updatedAt: Date;

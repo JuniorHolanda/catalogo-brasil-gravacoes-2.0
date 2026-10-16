@@ -1,0 +1,45 @@
+{
+  "tableId": "tampografia-v1",
+  "version": 1,
+  "serviceSlug": "tampografia",
+  "currency": "BRL",
+  "baseColorCount": 1,
+  "groups": [
+    {
+      "id": "tampografia-logo-7mm",
+      "products": ["Caneta", "Lápis", "Lapiseira", "Canudo"],
+      "maxLogoWidthMm": null,
+      "maxLogoHeightMm": 7,
+      "tiers": [
+        { "minQuantity": 1, "maxQuantity": 1000, "kind": "fixedBatch", "amountCents": 17500 },
+        { "minQuantity": 1001, "maxQuantity": 5000, "kind": "perPiece", "amountCents": 17 },
+        { "minQuantity": 5001, "maxQuantity": 7000, "kind": "perPiece", "amountCents": 16 },
+        { "minQuantity": 7001, "maxQuantity": 9000, "kind": "perPiece", "amountCents": 15 },
+        { "minQuantity": 9001, "maxQuantity": null, "kind": "perPiece", "amountCents": 14 }
+      ]
+    },
+    {
+      "id": "tampografia-logo-40x40mm",
+      "products": [
+        "Suporte retrátil para celular",
+        "Power bank",
+        "Caixa de som",
+        "Cabo USB retrátil",
+        "Luminária LED",
+        "Suporte para celular",
+        "Protetor para câmera"
+      ],
+      "maxLogoWidthMm": 40,
+      "maxLogoHeightMm": 40,
+      "tiers": [
+        { "minQuantity": 1, "maxQuantity": 100, "kind": "fixedBatch", "amountCents": 16500 },
+        { "minQuantity": 101, "maxQuantity": 250, "kind": "perPiece", "amountCents": 160 },
+        { "minQuantity": 251, "maxQuantity": 360, "kind": "perPiece", "amountCents": 155 },
+        { "minQuantity": 361, "maxQuantity": 570, "kind": "perPiece", "amountCents": 130 },
+        { "minQuantity": 571, "maxQuantity": 775, "kind": "perPiece", "amountCents": 100 },
+        { "minQuantity": 776, "maxQuantity": 1000, "kind": "perPiece", "amountCents": 99 },
+        { "minQuantity": 1001, "maxQuantity": null, "kind": "perPiece", "amountCents": 85 }
+      ]
+    }
+  ]
+}

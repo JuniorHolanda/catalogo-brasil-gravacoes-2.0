@@ -1,4 +1,6 @@
-import { MAX_CUSTOMER_FILE_BYTES } from "@/lib/storage-quota";
+import "server-only";
+
+import { MAX_CUSTOMER_FILE_BYTES } from "@/server/files/storage-quota";
 
 const allowedExtensions: Record<string, string> = {
   jpg: "image/jpeg",

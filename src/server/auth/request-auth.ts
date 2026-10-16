@@ -1,5 +1,5 @@
 import "server-only";
-import { getAuth } from "@/lib/auth";
+import { getAuth } from "@/server/auth/auth";
 
 export async function getRequestUser(request: Request) {
   const session = await getAuth().api.getSession({ headers: request.headers });

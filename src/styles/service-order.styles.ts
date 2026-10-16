@@ -106,6 +106,87 @@ export const SQuoteForm = styled.form`
   gap: var(--gap-md-2);
 `;
 
+export const SQuoteEngravings = styled.section`
+  display: grid;
+  gap: var(--gap-md-2);
+  padding-top: var(--space-md-1);
+  border-top: 1px solid ${cssTheme.colors.border};
+`;
+
+export const SArtworkCard = styled.fieldset`
+  position: relative;
+  display: grid;
+  min-width: 0;
+  gap: var(--gap-md-2);
+  margin: 0;
+  ${padding("md-2")}
+  ${radius("md")}
+  border: 1px dashed ${cssTheme.colors.textMuted};
+  color: ${cssTheme.colors.text};
+  background: ${cssTheme.colors.surface};
+
+  @media (max-width: 420px) {
+    ${padding("md-1")}
+  }
+`;
+
+export const SArtworkLegend = styled.legend`
+  padding: 0 var(--space-sm-1);
+  color: ${cssTheme.colors.textMuted};
+  font-size: 0.8rem;
+  font-weight: 800;
+`;
+
+export const SRemoveEngravingButton = styled.button`
+  position: absolute;
+  top: var(--space-sm-1);
+  right: var(--space-sm-1);
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  gap: var(--gap-sm-1);
+  ${padding("tb-sm-1", "lr-sm-1")}
+  ${radius("sm")}
+  border: 0;
+  color: ${cssTheme.colors.context.danger};
+  background: ${cssTheme.colors.surfaceMuted};
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: wait;
+  }
+`;
+
+export const SAddEngravingButton = styled.button`
+  display: inline-flex;
+  min-height: 2.4rem;
+  justify-self: end;
+  align-items: center;
+  gap: var(--gap-sm-1);
+  ${padding("tb-sm-1", "lr-md-2")}
+  ${radius("md")}
+  border: 0;
+  color: ${cssTheme.colors.text};
+  background: ${cssTheme.colors.surfacePanel};
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 3px solid ${cssTheme.colors.focus};
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+
 export const SProductOptions = styled.div`
   display: flex;
   flex-wrap: wrap;

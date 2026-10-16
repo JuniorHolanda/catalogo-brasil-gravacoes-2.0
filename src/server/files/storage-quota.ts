@@ -7,8 +7,8 @@ import {
   getStorageAlertsCollection,
   type R2StorageQuotaRecord,
   type StorageAlertRecord,
-} from "@/lib/mongodb";
-import { countR2StoredBytes } from "@/lib/r2";
+} from "@/server/database/mongodb";
+import { countR2StoredBytes } from "@/server/files/r2";
 
 export const MAX_CUSTOMER_FILE_BYTES = 5_000_000;
 export const CUSTOMER_FILE_CHUNK_BYTES = 4_000_000;

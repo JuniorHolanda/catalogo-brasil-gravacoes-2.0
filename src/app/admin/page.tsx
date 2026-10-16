@@ -1,8 +1,8 @@
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
-import { getAuth } from "@/lib/auth";
-import { getCustomerFilesCollection, getStorageAlertsCollection } from "@/lib/mongodb";
-import { formatStorage, getStorageQuota, notifyStorageQuotaChanged, STORAGE_HARD_LIMIT_BYTES } from "@/lib/storage-quota";
+import { getAuth } from "@/server/auth/auth";
+import { getAdminDashboardData } from "@/server/admin/dashboard-service";
+import { formatStorage } from "@/server/files/storage-quota";
 import {
   SAdminAlert,
   SAdminDashboard,
@@ -20,17 +20,7 @@ export default async function AdminDashboardPage() {
   if (!session) redirect("/");
   if ((session.user as typeof session.user & { role?: string }).role !== "admin") notFound();
 
-  await notifyStorageQuotaChanged().catch(() => undefined);
-  const [quota, files, alerts] = await Promise.all([
-    getStorageQuota(),
-    getCustomerFilesCollection(),
-    getStorageAlertsCollection(),
-  ]);
-  const [fileCount, storageAlerts] = await Promise.all([
-    files.countDocuments({ status: "ready" }),
-    alerts.find().sort({ createdAt: -1 }).toArray(),
-  ]);
-  const usagePercent = Math.min(100, quota.usedBytes / STORAGE_HARD_LIMIT_BYTES * 100);
+  const { quota, fileCount, storageAlerts, usagePercent } = await getAdminDashboardData();
 
   return (
     <SAdminDashboard>

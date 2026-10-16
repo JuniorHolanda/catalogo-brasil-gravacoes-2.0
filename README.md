@@ -76,6 +76,8 @@ Configure `MONGODB_URI`, `MONGODB_DB`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, 
 
 ## Desenvolvimento
 
+A aplicação usa um monólito modular Next.js. As fronteiras entre interface, rotas HTTP e código privado do servidor estão descritas em [docs/arquitetura-aplicacao.md](docs/arquitetura-aplicacao.md).
+
 ```bash
 npm install
 npm run dev

@@ -1,7 +1,7 @@
 import "server-only";
 import { mongodbAdapter } from "@better-auth/mongo-adapter";
 import { betterAuth } from "better-auth/minimal";
-import { getMongoClient, getMongoDatabase } from "@/lib/mongodb";
+import { getMongoClient, getMongoDatabase } from "@/server/database/mongodb";
 
 function buildAuth() {
   const googleClientId = process.env.GOOGLE_CLIENT_ID;

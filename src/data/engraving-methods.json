@@ -1,8 +1,31 @@
 [
   {
+    "slug": "tampografia",
+    "name": "Tampografia",
+    "supportsPreQuote": true,
+    "products": [
+      "Caneta",
+      "Lápis",
+      "Lapiseira",
+      "Canudo",
+      "Suporte retrátil para celular",
+      "Power bank",
+      "Caixa de som",
+      "Cabo USB retrátil",
+      "Luminária LED",
+      "Suporte para celular",
+      "Protetor para câmera"
+    ],
+    "tagline": "Gravação precisa em peças promocionais",
+    "description": "A tampografia transfere a arte para peças pequenas e superfícies curvas com boa definição.",
+    "details": "O tamanho permitido e o valor variam conforme o produto e cada gravação. Informe um lado/local por arte; gravações em mais de uma cor seguem para análise da equipe.",
+    "image": "/images/engraving-methods/tampografia.svg",
+    "alt": "Ilustração de uma máquina de tampografia gravando uma caneta"
+  },
+  {
     "slug": "silkscreen",
     "name": "SilkScreen",
-    "supportsPreQuote": true,
+    "supportsPreQuote": false,
     "products": ["Lápis", "Lapiseira", "Canudo"],
     "tagline": "Cores vibrantes",
     "description": "Tinta aplicada diretamente à peça, com cores vivas e cobertura consistente.",
