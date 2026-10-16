@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import engravingMethods from "@/data/engraving-methods.json";
-import quotePricing from "@/server/quotes/pricing-table.json";
+import engravingMethods from "@brasil-gravacoes/domain/services";
 import { ServiceOrderForm } from "@/components/service-order-form";
 import { SiteFooter } from "@/components/site-footer";
 import {
@@ -40,13 +39,6 @@ export default async function ServicePageRoute({ params }: ServicePageProps) {
   const { slug } = await params;
   const service = engravingMethods.find((item) => item.slug === slug);
   if (!service) notFound();
-  const productLogoLimits = service.slug === quotePricing.serviceSlug
-    ? Object.fromEntries(quotePricing.groups.flatMap((group) => group.products.map((product) => [
-        product,
-        { maxWidthMm: group.maxLogoWidthMm, maxHeightMm: group.maxLogoHeightMm },
-      ] as const)))
-    : undefined;
-
   return (
     <SServicePage key={service.slug}>
       <SServiceBackLink href="/#servicos">
@@ -74,7 +66,6 @@ export default async function ServicePageRoute({ params }: ServicePageProps) {
           name: service.name,
           supportsPreQuote: service.supportsPreQuote,
           products: service.products,
-          productLogoLimits,
         }}
       />
 

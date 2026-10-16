@@ -5,6 +5,7 @@ import { AnimatePresence } from "motion/react";
 import { FaCloudUploadAlt, FaTrashAlt, FaWhatsapp } from "react-icons/fa";
 import { AccountMenu } from "@/components/account-menu";
 import { authClient } from "@/lib/auth-client";
+import { apiFetch } from "@/lib/api-client";
 import { uploadCustomerFile } from "@/lib/customer-file-upload";
 import { createWhatsAppLink } from "@/lib/whatsapp";
 import type { AccountUser } from "@/lib/account";
@@ -152,6 +153,7 @@ function asCustomerDraft(input: Partial<ContactDraft> | undefined): ContactDraft
 }
 
 export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
+  const serviceSlug = service.slug;
   const { data: session, isPending: sessionPending } = authClient.useSession();
   const formRef = useRef<HTMLFormElement>(null);
   const pendingRequestRef = useRef<QuoteRequestType | null>(null);
@@ -173,9 +175,29 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
   const [notice, setNotice] = useState("");
   const [noticeIsError, setNoticeIsError] = useState(false);
   const [whatsAppUrl, setWhatsAppUrl] = useState("");
-  const productLogoLimits = service.productLogoLimits?.[product];
+  const [serviceLogoLimits, setServiceLogoLimits] = useState(service.productLogoLimits);
+  const productLogoLimits = serviceLogoLimits?.[product];
   const maxLogoWidthMm = productLogoLimits?.maxWidthMm ?? 1_000;
   const maxLogoHeightMm = productLogoLimits?.maxHeightMm ?? 1_000;
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void apiFetch(`/api/v1/services/${encodeURIComponent(serviceSlug)}`, {
+      cache: "no-store",
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        return await response.json() as {
+          service?: { productLogoLimits?: ServiceOrderFormProps["service"]["productLogoLimits"] };
+        };
+      })
+      .then((result) => {
+        if (result?.service?.productLogoLimits) setServiceLogoLimits(result.service.productLogoLimits);
+      })
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [serviceSlug]);
 
   const user: AccountUser | null = session?.user
     ? {
@@ -273,7 +295,7 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
     const timer = window.setTimeout(async () => {
       setPricingPreview({ status: "loading", key: previewRequestBody });
       try {
-        const response = await fetch("/api/quotes/preview", {
+        const response = await apiFetch("/api/v1/quotes/preview", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           signal: controller.signal,
@@ -341,7 +363,7 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
         });
       }
 
-      const response = await fetch("/api/quotes", {
+      const response = await apiFetch("/api/v1/quotes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -1,0 +1,40 @@
+services:
+  - type: web
+    name: brasil-gravacoes-api
+    runtime: node
+    plan: free
+    region: ohio
+    buildCommand: npm ci && npm run api:build
+    startCommand: npm run api:start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB
+        value: brasil-gravacoes
+      - key: BETTER_AUTH_SECRET
+        generateValue: true
+      - key: BETTER_AUTH_URL
+        sync: false
+      - key: FRONTEND_ORIGINS
+        sync: false
+      - key: ADMIN_EMAILS
+        value: juniorholanda@outlook.com
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: STORAGE_ALERT_FROM
+        sync: false
+      - key: CLOUDFLARE_R2_ACCOUNT_ID
+        sync: false
+      - key: CLOUDFLARE_R2_ACCESS_KEY_ID
+        sync: false
+      - key: CLOUDFLARE_R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: CLOUDFLARE_R2_BUCKET
+        sync: false

@@ -3,8 +3,8 @@ import "server-only";
 import { NextResponse } from "next/server";
 import { ApplicationError } from "@/server/core/application-error";
 import { readBodyWithLimit } from "@/server/files/customer-files";
-import { getRequestUser, isSameOriginRequest } from "@/server/auth/request-auth";
-import { createCustomerQuote, listRecentCustomerQuotes } from "@/server/quotes/quote-service";
+import { getRequestUser, isAdminUser, isSameOriginRequest } from "@/server/auth/request-auth";
+import { createCustomerQuote, listCustomerQuotes } from "@/server/quotes/quote-service";
 
 export async function GET(request: Request) {
   const user = await getRequestUser(request);
@@ -13,8 +13,8 @@ export async function GET(request: Request) {
   }
 
   try {
-    const orders = await listRecentCustomerQuotes(user.id);
-    return NextResponse.json({ orders });
+    const quotes = await listCustomerQuotes(user.id, isAdminUser(user));
+    return NextResponse.json({ quotes });
   } catch (error) {
     const status = error instanceof ApplicationError ? error.status : 503;
     const message = error instanceof ApplicationError

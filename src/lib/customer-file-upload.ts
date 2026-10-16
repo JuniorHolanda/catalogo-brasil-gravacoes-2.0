@@ -1,5 +1,7 @@
 "use client";
 
+import { apiFetch } from "@/lib/api-client";
+
 type FileReservation = {
   id: string;
   partSize: number;
@@ -16,7 +18,7 @@ export async function uploadCustomerFile(
   file: File,
   onProgress?: (partNumber: number, partCount: number) => void,
 ): Promise<string> {
-  const reservationResponse = await fetch("/api/files", {
+  const reservationResponse = await apiFetch("/api/v1/files", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ fileName: file.name, sizeBytes: file.size }),
@@ -31,7 +33,7 @@ export async function uploadCustomerFile(
       onProgress?.(partNumber + 1, reservation.partCount);
       const start = partNumber * reservation.partSize;
       const part = file.slice(start, Math.min(start + reservation.partSize, file.size));
-      const uploadResponse = await fetch(`/api/files/${reservation.id}/parts/${partNumber}`, {
+      const uploadResponse = await apiFetch(`/api/v1/files/${reservation.id}/parts/${partNumber}`, {
         method: "PUT",
         headers: { "Content-Type": "application/octet-stream" },
         body: part,
@@ -41,13 +43,13 @@ export async function uploadCustomerFile(
       }
     }
 
-    const completeResponse = await fetch(`/api/files/${reservation.id}/complete`, { method: "POST" });
+    const completeResponse = await apiFetch(`/api/v1/files/${reservation.id}/complete`, { method: "POST" });
     if (!completeResponse.ok) {
       await throwResponseError(completeResponse, "Não foi possível concluir o arquivo.");
     }
     return reservation.id;
   } catch (error) {
-    await fetch(`/api/files/${reservation.id}`, { method: "DELETE" }).catch(() => undefined);
+    await apiFetch(`/api/v1/files/${reservation.id}`, { method: "DELETE" }).catch(() => undefined);
     throw error;
   }
 }

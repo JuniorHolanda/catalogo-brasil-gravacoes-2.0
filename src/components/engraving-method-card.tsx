@@ -1,5 +1,5 @@
 import Image from "next/image";
-import engravingMethods from "@/data/engraving-methods.json";
+import engravingMethods from "@brasil-gravacoes/domain/services";
 import {
   SEngravingArtwork,
   SEngravingArtworkRings,

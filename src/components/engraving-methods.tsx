@@ -1,4 +1,4 @@
-import engravingMethods from '@/data/engraving-methods.json';
+import engravingMethods from '@brasil-gravacoes/domain/services';
 import { EngravingMethodsCarousel } from '@/components/engraving-methods-carousel';
 import {
   SEngravingCarouselViewport,

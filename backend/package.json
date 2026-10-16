@@ -1,0 +1,30 @@
+{
+  "name": "@brasil-gravacoes/backend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 4000",
+    "build": "next build",
+    "start": "node scripts/start.mjs",
+    "lint": "eslint src middleware.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1152.0",
+    "@aws-sdk/s3-request-presigner": "^3.1152.0",
+    "@better-auth/mongo-adapter": "^1.7.10",
+    "@brasil-gravacoes/domain": "*",
+    "better-auth": "^1.7.10",
+    "mongodb": "^6.21.0",
+    "next": "16.4.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.0",
+    "typescript": "^5"
+  }
+}

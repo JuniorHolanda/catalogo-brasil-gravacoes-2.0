@@ -2,18 +2,23 @@
   "name": "brasil-gravacoes-web-app",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "backend",
+    "packages/domain"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint src",
+    "api:dev": "npm run dev --workspace @brasil-gravacoes/backend",
+    "api:build": "npm run build --workspace @brasil-gravacoes/backend",
+    "api:start": "npm run start --workspace @brasil-gravacoes/backend",
+    "api:lint": "npm run lint --workspace @brasil-gravacoes/backend"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1152.0",
-    "@aws-sdk/s3-request-presigner": "^3.1152.0",
-    "@better-auth/mongo-adapter": "^1.7.10",
+    "@brasil-gravacoes/domain": "*",
     "better-auth": "^1.7.10",
-    "mongodb": "^6.21.0",
     "motion": "^14.3.0",
     "next": "16.4.0",
     "react": "19.3.0",

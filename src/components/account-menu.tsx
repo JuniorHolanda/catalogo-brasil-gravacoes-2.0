@@ -5,6 +5,7 @@ import Image from "next/image";
 import { motion } from "motion/react";
 import { FaGoogle, FaTimes, FaUser } from "react-icons/fa";
 import { authClient } from "@/lib/auth-client";
+import { apiFetch } from "@/lib/api-client";
 import type { AccountOrderStatus, AccountUser } from "@/lib/account";
 import {
   SAccountAction,
@@ -48,8 +49,12 @@ type AccountMenuProps = {
 
 const orderStatusLabels: Record<AccountOrderStatus, string> = {
   awaiting: "Aguardando",
+  approved: "Aprovado",
+  rejected: "Recusado",
   producing: "Produzindo",
   problem: "Problema",
+  completed: "Concluído",
+  cancelled: "Cancelado",
 };
 
 /** Mostra os atalhos da conta conforme a sessão autenticada disponível. */
@@ -81,7 +86,7 @@ export function AccountMenu({ user, onClose, initialAuthMode = "signIn", standal
     if (!userEmail) return;
 
     let isCurrent = true;
-    void fetch("/api/quotes", { cache: "no-store" })
+    void apiFetch("/api/v1/orders/recent", { cache: "no-store" })
       .then(async (response) => {
         if (!response.ok) return null;
         return await response.json() as { orders?: typeof recentOrders };
@@ -131,7 +136,9 @@ export function AccountMenu({ user, onClose, initialAuthMode = "signIn", standal
       if (result.error) {
         setAuthNotice(result.error.message || "Não foi possível autenticar sua conta.");
       } else {
-        setAuthNotice(authMode === "signUp" ? "Conta criada com sucesso." : "Acesso realizado.");
+        setAuthNotice(authMode === "signUp"
+          ? "Enviamos um link de confirmação. Verifique seu e-mail para acessar a conta."
+          : "Acesso realizado.");
       }
     } catch {
       setAuthNotice("Não foi possível concluir o acesso. Tente novamente.");

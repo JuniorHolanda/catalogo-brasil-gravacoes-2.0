@@ -32,7 +32,7 @@ export type CustomerFileRecord = {
   updatedAt: Date;
 };
 
-export type CustomerQuoteRecord = {
+export type QuoteRecord = {
   ownerUserId: string;
   number: string;
   serviceSlug: string;
@@ -49,9 +49,15 @@ export type CustomerQuoteRecord = {
     colorCount: number;
     customerFileId?: string;
   }>;
-  status: "awaiting" | "producing" | "problem";
+  status: "awaiting" | "approved" | "rejected" | "producing" | "problem";
   createdAt: Date;
   updatedAt: Date;
+};
+
+export type OrderRecord = Omit<QuoteRecord, "status"> & {
+  quoteId: string;
+  quoteNumber: string;
+  status: "awaiting" | "producing" | "problem" | "completed" | "cancelled";
 };
 
 export type R2StorageQuotaRecord = {
@@ -93,8 +99,11 @@ declare global {
   var _brasilGravacoesCustomerFilesCollectionPromise:
     | Promise<Collection<CustomerFileRecord>>
     | undefined;
-  var _brasilGravacoesCustomerQuotesCollectionPromise:
-    | Promise<Collection<CustomerQuoteRecord>>
+  var _brasilGravacoesQuotesCollectionPromise:
+    | Promise<Collection<QuoteRecord>>
+    | undefined;
+  var _brasilGravacoesOrdersCollectionPromise:
+    | Promise<Collection<OrderRecord>>
     | undefined;
   var _brasilGravacoesR2StorageQuotaCollectionPromise:
     | Promise<Collection<R2StorageQuotaRecord>>
@@ -285,29 +294,67 @@ export async function getCustomerFilesCollection(): Promise<Collection<CustomerF
   return global._brasilGravacoesCustomerFilesCollectionPromise;
 }
 
-export async function getCustomerQuotesCollection(): Promise<Collection<CustomerQuoteRecord>> {
-  if (!global._brasilGravacoesCustomerQuotesCollectionPromise) {
-    global._brasilGravacoesCustomerQuotesCollectionPromise = getMongoClientPromise()
+export async function getQuotesCollection(): Promise<Collection<QuoteRecord>> {
+  if (!global._brasilGravacoesQuotesCollectionPromise) {
+    global._brasilGravacoesQuotesCollectionPromise = getMongoClientPromise()
       .then(async (client) => {
-        const collection = client
-          .db(process.env.MONGODB_DB || "brasil-gravacoes")
-          .collection<CustomerQuoteRecord>("customerQuotes");
+        const database = client.db(process.env.MONGODB_DB || "brasil-gravacoes");
+        const collection = database.collection<QuoteRecord>("quotes");
+        const hasLegacyQuotes = await database
+          .listCollections({ name: "customerQuotes" }, { nameOnly: true })
+          .hasNext();
+        if (hasLegacyQuotes) {
+          await database.collection("customerQuotes").aggregate([
+            {
+              $merge: {
+                into: "quotes",
+                on: "_id",
+                whenMatched: "keepExisting",
+                whenNotMatched: "insert",
+              },
+            },
+          ]).toArray();
+        }
         await Promise.all([
           collection.createIndex(
             { ownerUserId: 1, createdAt: -1 },
-            { name: "customer_quotes_by_owner_and_date" },
+            { name: "quotes_by_owner_and_date" },
           ),
-          collection.createIndex({ number: 1 }, { name: "customer_quote_number", unique: true }),
+          collection.createIndex({ number: 1 }, { name: "quote_number", unique: true }),
         ]);
         return collection;
       })
       .catch((error: unknown) => {
-        global._brasilGravacoesCustomerQuotesCollectionPromise = undefined;
+        global._brasilGravacoesQuotesCollectionPromise = undefined;
         throw error;
       });
   }
 
-  return global._brasilGravacoesCustomerQuotesCollectionPromise;
+  return global._brasilGravacoesQuotesCollectionPromise;
+}
+
+export async function getOrdersCollection(): Promise<Collection<OrderRecord>> {
+  if (!global._brasilGravacoesOrdersCollectionPromise) {
+    global._brasilGravacoesOrdersCollectionPromise = getMongoClientPromise()
+      .then(async (client) => {
+        const collection = client.db(process.env.MONGODB_DB || "brasil-gravacoes")
+          .collection<OrderRecord>("orders");
+        await Promise.all([
+          collection.createIndex(
+            { ownerUserId: 1, createdAt: -1 },
+            { name: "orders_by_owner_and_date" },
+          ),
+          collection.createIndex({ number: 1 }, { name: "order_number", unique: true }),
+          collection.createIndex({ quoteId: 1 }, { name: "orders_by_quote", unique: true }),
+        ]);
+        return collection;
+      })
+      .catch((error: unknown) => {
+        global._brasilGravacoesOrdersCollectionPromise = undefined;
+        throw error;
+      });
+  }
+  return global._brasilGravacoesOrdersCollectionPromise;
 }
 
 export async function getR2StorageQuotaCollection(): Promise<Collection<R2StorageQuotaRecord>> {

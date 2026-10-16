@@ -1,10 +1,10 @@
 import "server-only";
 
 import { randomUUID } from "node:crypto";
-import { ObjectId } from "mongodb";
-import engravingMethods from "@/data/engraving-methods.json";
+import { ObjectId, type WithId } from "mongodb";
+import engravingMethods from "@brasil-gravacoes/domain/services";
 import { ApplicationError } from "@/server/core/application-error";
-import { getCustomerFilesCollection, getCustomerQuotesCollection } from "@/server/database/mongodb";
+import { getCustomerFilesCollection, getQuotesCollection, getOrdersCollection, type QuoteRecord } from "@/server/database/mongodb";
 import { calculateQuotePricing } from "@/server/quotes/quote-pricing";
 import {
   validateQuotePricingSubmission,
@@ -31,7 +31,7 @@ export function getCustomerQuotePricingPreview(payload: unknown) {
 
 export async function listRecentCustomerQuotes(ownerUserId: string) {
   try {
-    const quotes = await (await getCustomerQuotesCollection())
+    const quotes = await (await getQuotesCollection())
       .find({ ownerUserId })
       .sort({ createdAt: -1 })
       .limit(3)
@@ -41,6 +41,88 @@ export async function listRecentCustomerQuotes(ownerUserId: string) {
   } catch {
     throw new ApplicationError("Não foi possível carregar seus pedidos.", 503);
   }
+}
+
+export async function listCustomerQuotes(ownerUserId: string, isAdmin = false) {
+  const query = isAdmin ? {} : { ownerUserId };
+  const records = await (await getQuotesCollection())
+    .find(query)
+    .sort({ createdAt: -1 })
+    .limit(100)
+    .toArray();
+  return records.map(serializeQuote);
+}
+
+export async function getCustomerQuote(id: string) {
+  if (!ObjectId.isValid(id)) return null;
+  const quote = await (await getQuotesCollection()).findOne({ _id: new ObjectId(id) });
+  return quote ? serializeQuote(quote) : null;
+}
+
+export async function updateCustomerQuote(
+  id: string,
+  ownerUserId: string,
+  isAdmin: boolean,
+  payload: unknown,
+) {
+  if (!ObjectId.isValid(id)) throw new ApplicationError("Orçamento não encontrado.", 404);
+  const collection = await getQuotesCollection();
+  const quote = await collection.findOne({ _id: new ObjectId(id) });
+  if (!quote || (!isAdmin && quote.ownerUserId !== ownerUserId)) {
+    throw new ApplicationError("Orçamento não encontrado.", 404);
+  }
+  if (!isAdmin && quote.status !== "awaiting") {
+    throw new ApplicationError("Este orçamento não pode mais ser alterado.", 409);
+  }
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new ApplicationError("Envie os campos que deseja atualizar.", 400);
+  }
+
+  const body = payload as Record<string, unknown>;
+  const updates: Record<string, unknown> = {};
+  if (isAdmin && typeof body.status === "string" && ["awaiting", "approved", "rejected", "producing", "problem"].includes(body.status)) {
+    updates.status = body.status;
+  } else if (Object.hasOwn(body, "status")) {
+    throw new ApplicationError("Status de orçamento inválido ou sem permissão.", 400);
+  }
+
+  if (body.customer !== undefined) {
+    const customer = validateQuoteSubmission({
+      serviceSlug: quote.serviceSlug,
+      serviceName: quote.serviceName,
+      product: quote.product,
+      quantity: quote.quantity,
+      engravings: quote.engravings,
+      requestType: quote.requestType,
+      customer: body.customer,
+    });
+    if (!customer.success) throw new ApplicationError("Confira os dados de contato do orçamento.", 400);
+    updates.customer = customer.value.customer;
+  }
+
+  if (Object.keys(updates).length === 0) throw new ApplicationError("Nenhum campo válido foi enviado.", 400);
+  updates.updatedAt = new Date();
+  await collection.updateOne({ _id: quote._id }, { $set: updates });
+  return serializeQuote({ ...quote, ...updates } as WithId<QuoteRecord>);
+}
+
+export async function deleteCustomerQuote(id: string, ownerUserId: string, isAdmin: boolean) {
+  if (!ObjectId.isValid(id)) throw new ApplicationError("Orçamento não encontrado.", 404);
+  const quoteId = new ObjectId(id);
+  const quote = await (await getQuotesCollection()).findOne({ _id: quoteId });
+  if (!quote || (!isAdmin && quote.ownerUserId !== ownerUserId)) {
+    throw new ApplicationError("Orçamento não encontrado.", 404);
+  }
+  if (!isAdmin && quote.status !== "awaiting") {
+    throw new ApplicationError("Este orçamento não pode mais ser excluído.", 409);
+  }
+  const linkedOrder = await (await getOrdersCollection()).findOne({ quoteId: quoteId.toHexString() });
+  if (linkedOrder) throw new ApplicationError("Um orçamento vinculado a um pedido não pode ser excluído.", 409);
+  await (await getQuotesCollection()).deleteOne({ _id: quoteId });
+}
+
+function serializeQuote(quote: WithId<QuoteRecord>) {
+  return { ...quote, id: quote._id.toHexString(), _id: undefined };
 }
 
 export async function createCustomerQuote(ownerUserId: string, payload: unknown) {
@@ -85,7 +167,7 @@ export async function createCustomerQuote(ownerUserId: string, payload: unknown)
 
     const now = new Date();
     const number = `BG-${now.getFullYear()}-${randomUUID().slice(0, 8).toUpperCase()}`;
-    await (await getCustomerQuotesCollection()).insertOne({
+    const savedQuote = await (await getQuotesCollection()).insertOne({
       ownerUserId,
       number,
       serviceSlug: service.slug,
@@ -108,6 +190,7 @@ export async function createCustomerQuote(ownerUserId: string, payload: unknown)
     });
 
     return {
+      id: savedQuote.insertedId.toHexString(),
       number,
       serviceName: service.name,
       status: "awaiting" as const,

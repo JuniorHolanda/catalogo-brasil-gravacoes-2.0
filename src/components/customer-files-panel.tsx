@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
 import Link from "next/link";
 import { FaDownload, FaTrash } from "react-icons/fa";
+import { apiFetch } from "@/lib/api-client";
 import {
   SCustomerPanel,
   SCustomerPanelHeader,
@@ -33,7 +34,7 @@ type FileListResponse = {
 };
 
 async function requestFileList(): Promise<FileListResponse> {
-  const response = await fetch("/api/files", { cache: "no-store" });
+  const response = await apiFetch("/api/v1/files", { cache: "no-store" });
   const result = await response.json();
   if (!response.ok) throw new Error(result.error || "Não foi possível carregar os arquivos.");
   return result as FileListResponse;
@@ -130,7 +131,7 @@ export function CustomerFilesPanel() {
 
       setUploadingName(file.name);
       try {
-        const reservationResponse = await fetch("/api/files", {
+        const reservationResponse = await apiFetch("/api/v1/files", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ fileName: file.name, sizeBytes: file.size }),
@@ -142,22 +143,22 @@ export function CustomerFilesPanel() {
           setUploadingName(`${file.name} (${partNumber + 1}/${reservation.partCount})`);
           const start = partNumber * reservation.partSize;
           const part = file.slice(start, Math.min(start + reservation.partSize, file.size));
-          const uploadResponse = await fetch(`/api/files/${reservation.id}/parts/${partNumber}`, {
+          const uploadResponse = await apiFetch(`/api/v1/files/${reservation.id}/parts/${partNumber}`, {
             method: "PUT",
             headers: { "Content-Type": "application/octet-stream" },
             body: part,
           });
           if (!uploadResponse.ok) {
             const uploadError = await uploadResponse.json().catch(() => ({}));
-            await fetch(`/api/files/${reservation.id}`, { method: "DELETE" }).catch(() => undefined);
+            await apiFetch(`/api/v1/files/${reservation.id}`, { method: "DELETE" }).catch(() => undefined);
             throw new Error(uploadError.error || "Não foi possível enviar o arquivo.");
           }
         }
 
-        const completeResponse = await fetch(`/api/files/${reservation.id}/complete`, { method: "POST" });
+        const completeResponse = await apiFetch(`/api/v1/files/${reservation.id}/complete`, { method: "POST" });
         if (!completeResponse.ok) {
           const completeError = await completeResponse.json().catch(() => ({}));
-          await fetch(`/api/files/${reservation.id}`, { method: "DELETE" }).catch(() => undefined);
+          await apiFetch(`/api/v1/files/${reservation.id}`, { method: "DELETE" }).catch(() => undefined);
           throw new Error(completeError.error || "Não foi possível concluir o arquivo.");
         }
       } catch (error) {
@@ -176,7 +177,7 @@ export function CustomerFilesPanel() {
     setBusyFileId(file.id);
     setNotice("");
     try {
-      const response = await fetch(`/api/files/${file.id}/download`);
+      const response = await apiFetch(`/api/v1/files/${file.id}/download`);
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Não foi possível preparar o download.");
       window.location.assign(result.url as string);
@@ -192,7 +193,7 @@ export function CustomerFilesPanel() {
     setBusyFileId(file.id);
     setNotice("");
     try {
-      const response = await fetch(`/api/files/${file.id}/complete`, { method: "POST" });
+      const response = await apiFetch(`/api/v1/files/${file.id}/complete`, { method: "POST" });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Não foi possível concluir o envio.");
       await loadFiles();
@@ -209,7 +210,7 @@ export function CustomerFilesPanel() {
     setBusyFileId(file.id);
     setNotice("");
     try {
-      const response = await fetch(`/api/files/${file.id}`, { method: "DELETE" });
+      const response = await apiFetch(`/api/v1/files/${file.id}`, { method: "DELETE" });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Não foi possível excluir o arquivo.");
       setFiles((current) => current.filter((item) => item.id !== file.id));
