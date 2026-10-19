@@ -7,10 +7,12 @@
     "packages/domain"
   ],
   "scripts": {
-    "dev": "next dev",
+    "dev": "node scripts/dev.mjs",
+    "dev:frontend": "next dev --port 3000",
     "build": "next build",
     "start": "next start",
     "lint": "eslint src",
+    "test:auth": "node scripts/test-auth.mjs",
     "api:dev": "npm run dev --workspace @brasil-gravacoes/backend",
     "api:build": "npm run build --workspace @brasil-gravacoes/backend",
     "api:start": "npm run start --workspace @brasil-gravacoes/backend",

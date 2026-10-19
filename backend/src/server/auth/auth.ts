@@ -3,6 +3,7 @@ import { mongodbAdapter } from "@better-auth/mongo-adapter";
 import { betterAuth } from "better-auth/minimal";
 import { admin } from "better-auth/plugins";
 import { getMongoClient, getMongoDatabase } from "@/server/database/mongodb";
+import { getAuthAvailability } from "@/server/auth/auth-availability";
 
 const frontendOrigins = (process.env.FRONTEND_ORIGINS || "http://localhost:3000")
   .split(",")
@@ -12,7 +13,8 @@ const frontendOrigins = (process.env.FRONTEND_ORIGINS || "http://localhost:3000"
 function buildAuth() {
   const googleClientId = process.env.GOOGLE_CLIENT_ID;
   const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const baseURL = process.env.BETTER_AUTH_URL || "http://localhost:4000";
+  const baseURL = process.env.BETTER_AUTH_URL || "http://localhost:3000";
+  const availability = getAuthAvailability();
 
   return betterAuth({
     appName: "Brasil Gravações",
@@ -21,11 +23,12 @@ function buildAuth() {
     database: mongodbAdapter(getMongoDatabase(), { client: getMongoClient() }),
     emailAndPassword: {
       enabled: true,
+      disableSignUp: !availability.emailSignUp,
       requireEmailVerification: true,
     },
     emailVerification: {
       sendOnSignUp: true,
-      sendOnSignIn: true,
+      sendOnSignIn: availability.verificationEmail,
       autoSignInAfterVerification: true,
       sendVerificationEmail: async ({ user, url }) => {
         const apiKey = process.env.RESEND_API_KEY;
@@ -68,7 +71,7 @@ function buildAuth() {
     advanced: {
       defaultCookieAttributes: {
         httpOnly: true,
-        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        sameSite: "lax",
         secure: process.env.NODE_ENV === "production",
       },
     },

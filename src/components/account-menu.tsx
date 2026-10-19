@@ -6,6 +6,7 @@ import { motion } from "motion/react";
 import { FaGoogle, FaTimes, FaUser } from "react-icons/fa";
 import { authClient } from "@/lib/auth-client";
 import { apiFetch } from "@/lib/api-client";
+import { authErrorMessage, type AuthAvailability } from "@/lib/auth-feedback";
 import type { AccountOrderStatus, AccountUser } from "@/lib/account";
 import {
   SAccountAction,
@@ -62,6 +63,9 @@ export function AccountMenu({ user, onClose, initialAuthMode = "signIn", standal
   const [authNotice, setAuthNotice] = useState("");
   const [authMode, setAuthMode] = useState<"signIn" | "signUp">(initialAuthMode);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [availability, setAvailability] = useState<AuthAvailability | null>(null);
+  const [availabilityFailed, setAvailabilityFailed] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState("");
   const [recentOrders, setRecentOrders] = useState(user?.recentOrders ?? []);
   const panelRef = useRef<HTMLElement>(null);
   const visibleOrders = recentOrders.slice(0, 3);
@@ -83,6 +87,23 @@ export function AccountMenu({ user, onClose, initialAuthMode = "signIn", standal
   }, [onClose]);
 
   useEffect(() => {
+    if (userEmail) return;
+    const controller = new AbortController();
+    void apiFetch("/api/auth/config", { cache: "no-store", signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Auth configuration unavailable");
+        return await response.json() as AuthAvailability;
+      })
+      .then((config) => {
+        if (!controller.signal.aborted) setAvailability(config);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setAvailabilityFailed(true);
+      });
+    return () => controller.abort();
+  }, [userEmail]);
+
+  useEffect(() => {
     if (!userEmail) return;
 
     let isCurrent = true;
@@ -102,6 +123,7 @@ export function AccountMenu({ user, onClose, initialAuthMode = "signIn", standal
   }, [userEmail]);
 
   async function signInWithGoogle() {
+    if (isSubmitting || !availability?.google) return;
     setIsSubmitting(true);
     setAuthNotice("");
     try {
@@ -110,38 +132,67 @@ export function AccountMenu({ user, onClose, initialAuthMode = "signIn", standal
         callbackURL: window.location.href,
       });
       if (result.error) {
-        setAuthNotice("Não foi possível entrar com Google. Verifique a configuração do OAuth.");
-        setIsSubmitting(false);
+        setAuthNotice("Não foi possível entrar com Google. Tente novamente em instantes.");
       }
     } catch {
       setAuthNotice("Não foi possível iniciar o acesso com Google.");
+    } finally {
       setIsSubmitting(false);
     }
   }
 
   async function submitCredentials(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isSubmitting) return;
+    if (authMode === "signUp" && !availability?.emailSignUp) {
+      setAuthNotice("O cadastro está temporariamente indisponível. Tente novamente mais tarde.");
+      return;
+    }
     setIsSubmitting(true);
     setAuthNotice("");
     const formData = new FormData(event.currentTarget);
-    const email = String(formData.get("email") ?? "");
+    const email = String(formData.get("email") ?? "").trim();
     const password = String(formData.get("password") ?? "");
-    const name = String(formData.get("name") ?? "");
+    const name = String(formData.get("name") ?? "").trim();
+    setVerificationEmail("");
 
     try {
       const result = authMode === "signUp"
-        ? await authClient.signUp.email({ name, email, password })
+        ? await authClient.signUp.email({ name, email, password, callbackURL: window.location.href })
         : await authClient.signIn.email({ email, password });
 
       if (result.error) {
-        setAuthNotice(result.error.message || "Não foi possível autenticar sua conta.");
+        setAuthNotice(result.error.code === "EMAIL_NOT_VERIFIED" && !availability?.verificationEmail
+          ? "Seu e-mail ainda não foi confirmado. O envio de confirmação está temporariamente indisponível."
+          : authErrorMessage(result.error));
+        if (result.error.code === "EMAIL_NOT_VERIFIED") setVerificationEmail(email);
       } else {
+        if (authMode === "signUp") setVerificationEmail(email);
         setAuthNotice(authMode === "signUp"
           ? "Enviamos um link de confirmação. Verifique seu e-mail para acessar a conta."
           : "Acesso realizado.");
       }
     } catch {
-      setAuthNotice("Não foi possível concluir o acesso. Tente novamente.");
+      setAuthNotice("Não foi possível conectar ao serviço de acesso. Tente novamente em instantes.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function resendVerification() {
+    if (isSubmitting || !verificationEmail || !availability?.verificationEmail) return;
+    setIsSubmitting(true);
+    setAuthNotice("");
+    try {
+      const result = await authClient.sendVerificationEmail({
+        email: verificationEmail,
+        callbackURL: window.location.href,
+      });
+      setAuthNotice(result.error
+        ? authErrorMessage(result.error)
+        : "Se a conta ainda precisar de confirmação, você receberá outro link. Confira também a pasta de spam.");
+    } catch {
+      setAuthNotice("Não foi possível reenviar a confirmação. Tente novamente em instantes.");
     } finally {
       setIsSubmitting(false);
     }
@@ -219,13 +270,25 @@ export function AccountMenu({ user, onClose, initialAuthMode = "signIn", standal
             <SAccountAction href="/painel">Ir para o painel</SAccountAction>
             <SAccountLogoutButton
               onClick={async () => {
-                await authClient.signOut();
-                onClose();
+                if (isSubmitting) return;
+                setIsSubmitting(true);
+                setAuthNotice("");
+                try {
+                  const result = await authClient.signOut();
+                  if (result.error) setAuthNotice("Não foi possível sair da conta. Tente novamente.");
+                  else onClose();
+                } catch {
+                  setAuthNotice("Não foi possível sair da conta. Tente novamente.");
+                } finally {
+                  setIsSubmitting(false);
+                }
               }}
+              disabled={isSubmitting}
               type="button"
             >
               Sair da conta
             </SAccountLogoutButton>
+            {authNotice && <SAccountNotice role="status">{authNotice}</SAccountNotice>}
           </>
         ) : (
           <>
@@ -236,10 +299,15 @@ export function AccountMenu({ user, onClose, initialAuthMode = "signIn", standal
               Seu orçamento atual será mantido após o login.
             </SGuestDescription>
 
-            <SGoogleLoginButton onClick={signInWithGoogle} disabled={isSubmitting} type="button">
-              <FaGoogle aria-hidden="true" />
-              Continuar com Google
-            </SGoogleLoginButton>
+            {availability?.google && (
+              <>
+                <SGoogleLoginButton onClick={signInWithGoogle} disabled={isSubmitting} type="button">
+                  <FaGoogle aria-hidden="true" />
+                  Continuar com Google
+                </SGoogleLoginButton>
+                <SAuthDivider aria-hidden="true">OU</SAuthDivider>
+              </>
+            )}
 
             <SAuthForm onSubmit={submitCredentials}>
               {authMode === "signUp" && (
@@ -249,6 +317,8 @@ export function AccountMenu({ user, onClose, initialAuthMode = "signIn", standal
                     autoComplete="name"
                     id="account-name"
                     name="name"
+                    maxLength={120}
+                    disabled={isSubmitting}
                     placeholder="Digite seu nome"
                     required
                     type="text"
@@ -262,6 +332,8 @@ export function AccountMenu({ user, onClose, initialAuthMode = "signIn", standal
                   autoComplete="email"
                   id="account-email"
                   name="email"
+                  maxLength={254}
+                  disabled={isSubmitting}
                   placeholder="Digite seu e-mail"
                   required
                   type="email"
@@ -275,25 +347,36 @@ export function AccountMenu({ user, onClose, initialAuthMode = "signIn", standal
                   id="account-password"
                   minLength={authMode === "signUp" ? 8 : undefined}
                   name="password"
+                  maxLength={128}
+                  disabled={isSubmitting}
                   placeholder="Digite sua senha"
                   required
                   type="password"
                 />
               </SAuthField>
 
-              <SAccountLoginButton disabled={isSubmitting} type="submit">
+              <SAccountLoginButton disabled={isSubmitting || (authMode === "signUp" && !availability?.emailSignUp)} type="submit">
                 {isSubmitting ? "Aguarde..." : authMode === "signUp" ? "Cadastrar" : "Entrar"}
               </SAccountLoginButton>
             </SAuthForm>
 
-            <SAuthDivider aria-hidden="true">OU</SAuthDivider>
+            {authMode === "signUp" && availability && !availability.emailSignUp && (
+              <SAccountNotice role="status">O cadastro está temporariamente indisponível. Tente novamente mais tarde.</SAccountNotice>
+            )}
+            {authMode === "signUp" && !availability && (
+              <SAccountNotice role="status">
+                {availabilityFailed ? "Não foi possível consultar o serviço de cadastro. Tente novamente em instantes." : "Verificando disponibilidade do cadastro…"}
+              </SAccountNotice>
+            )}
             <SRegisterPrompt>
               {authMode === "signIn" ? "Ainda não tem uma conta?" : "Já tem uma conta?"}
               <button
                 onClick={() => {
                   setAuthMode((mode) => mode === "signIn" ? "signUp" : "signIn");
                   setAuthNotice("");
+                  setVerificationEmail("");
                 }}
+                disabled={isSubmitting}
                 type="button"
               >
                 {authMode === "signIn" ? "Cadastre-se" : "Entrar"}
@@ -301,6 +384,13 @@ export function AccountMenu({ user, onClose, initialAuthMode = "signIn", standal
             </SRegisterPrompt>
 
             {authNotice && <SAccountNotice role="status">{authNotice}</SAccountNotice>}
+            {verificationEmail && availability?.verificationEmail && (
+              <SRegisterPrompt>
+                <button type="button" disabled={isSubmitting} onClick={resendVerification}>
+                  Reenviar confirmação de e-mail
+                </button>
+              </SRegisterPrompt>
+            )}
           </>
         )}
       </MotionAccountPanel>

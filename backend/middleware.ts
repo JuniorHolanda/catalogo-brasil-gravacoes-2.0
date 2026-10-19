@@ -34,6 +34,8 @@ export function middleware(request: NextRequest) {
   }
 
   const response = NextResponse.next();
+  // API responses can contain account data and also pass through the frontend CDN.
+  response.headers.set("Cache-Control", "private, no-store");
   if (origin && matchesOrigin) {
     for (const [key, value] of Object.entries(corsHeaders(origin))) response.headers.set(key, value);
   }
