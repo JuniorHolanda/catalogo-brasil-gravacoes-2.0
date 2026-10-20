@@ -17,10 +17,10 @@ O comando cria ou atualiza os dois perfis usando o hash de senha do Better Auth,
 
 ## Render e Vercel
 
-O `render.yaml` declara um segundo serviço, `brasil-gravacoes-dashboard`, no mesmo repositório e região da API. O Render injeta `API_HOSTPORT` apontando para o serviço privado da API. Depois da primeira sincronização:
+O `render.yaml` declara um segundo serviço, `brasil-gravacoes-dashboard`, no mesmo repositório e região da API. Como a API usa o plano gratuito do Render, a dashboard acessa a URL HTTPS pública definida em `API_URL`; serviços gratuitos não recebem conexões pela rede privada. Depois da primeira sincronização:
 
 - No serviço da API, mantenha `BETTER_AUTH_URL` apontando para o site público e inclua as origens exatas do site e da dashboard em `FRONTEND_ORIGINS`, separadas por vírgula.
-- No serviço da dashboard, confirme se `API_HOSTPORT` foi preenchido pelo Blueprint.
+- No serviço da dashboard, confirme se `API_URL` aponta para a origem HTTPS pública da API.
 - Na Vercel, configure `NEXT_PUBLIC_DASHBOARD_URL` com a URL HTTPS pública do serviço da dashboard.
 - No serviço da API do Render, configure os quatro valores `CLOUDFLARE_R2_ACCOUNT_ID`, `CLOUDFLARE_R2_ACCESS_KEY_ID`, `CLOUDFLARE_R2_SECRET_ACCESS_KEY` e `CLOUDFLARE_R2_BUCKET`. O binário do arquivo só fica pronto depois que as partes e o objeto final forem confirmados no R2.
 - Confira se `MONGODB_URI` começa exatamente com `mongodb+srv://` ou `mongodb://`; não inclua aspas externas. Uma URI malformada impede o health check e o deploy da API.

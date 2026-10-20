@@ -49,8 +49,5 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "22"
-      - key: API_HOSTPORT
-        fromService:
-          name: brasil-gravacoes-api
-          type: web
-          property: hostport
+      - key: API_URL
+        value: https://brasil-gravacoes-api.onrender.com
