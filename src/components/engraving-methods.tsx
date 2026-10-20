@@ -20,7 +20,7 @@ export function EngravingMethods() {
         <SEngravingSectionTitle
           type="title"
           headingLevel="h2"
-          size="xlg"
+          size="xl"
           weight={700}
           id="engraving-methods-title"
         >

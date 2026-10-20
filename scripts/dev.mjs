@@ -26,7 +26,13 @@ function stop(exitCode = 0) {
   }
 }
 
-for (const [name, cwd, port] of [["API", backend, "4000"], ["Frontend", root, "3000"]]) {
+const dashboard = fileURLToPath(new URL("../dashboard/", import.meta.url));
+
+for (const [name, cwd, port] of [
+  ["API", backend, "4000"],
+  ["Frontend", root, "3000"],
+  ["Dashboard", dashboard, "3100"],
+]) {
   const child = spawn(process.execPath, [next, "dev", "--port", port], {
     cwd,
     stdio: "inherit",

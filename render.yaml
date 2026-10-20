@@ -21,7 +21,7 @@ services:
       - key: FRONTEND_ORIGINS
         sync: false
       - key: ADMIN_EMAILS
-        value: juniorholanda@outlook.com
+        value: juniorholanda@outlook.com,contato@brasilgravacoes.com.br,vendas@brasilgravacoes.com.br
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET
@@ -38,3 +38,19 @@ services:
         sync: false
       - key: CLOUDFLARE_R2_BUCKET
         sync: false
+  - type: web
+    name: brasil-gravacoes-dashboard
+    runtime: node
+    plan: free
+    region: ohio
+    buildCommand: npm ci && npm run dashboard:build
+    startCommand: npm run dashboard:start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: API_HOSTPORT
+        fromService:
+          name: brasil-gravacoes-api
+          type: web
+          property: hostport

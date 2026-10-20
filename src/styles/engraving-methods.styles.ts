@@ -2,7 +2,7 @@ import { cssTheme } from "@/styles/theme";
 import Link from 'next/link';
 import styled from 'styled-components';
 import { Text } from '@/components/text';
-import { elevation, padding, radius } from '@/styles/mixins';
+import { elevation, font, padding, radius } from "@/styles/mixins";
 
 export const SEngravingSection = styled.section`
   position: relative;
@@ -29,14 +29,14 @@ export const SEngravingSectionHeader = styled.div`
 
 export const SEngravingSectionKicker = styled(Text)`
   color: ${cssTheme.colors.textMuted};
-  font-size: 0.72rem;
+  ${font("text-xs")}
   font-weight: 700;
   letter-spacing: 0.13em;
   text-transform: uppercase;
 `;
 
 export const SEngravingSectionTitle = styled(Text)`
-  font-size: clamp(2rem, 5vw, 3.2rem);
+  ${font("title-xl")}
   font-weight: 700;
   line-height: 0.95;
   letter-spacing: 0.01em;
@@ -45,7 +45,7 @@ export const SEngravingSectionTitle = styled(Text)`
 export const SEngravingSectionDescription = styled(Text)`
   max-width: 38rem;
   color: ${cssTheme.colors.textMuted};
-  font-size: 1rem;
+  ${font("text-lg")}
   line-height: 1.6;
 `;
 
@@ -164,7 +164,7 @@ export const SEngravingTagline = styled.span`
   width: 100%;
   color: ${cssTheme.colors.text};
   font-family: var(--font-secondary), cursive;
-  font-size: clamp(1.35rem, 10cqi, 2.1rem);
+  ${font("title-fluid-sm")}
   font-style: italic;
   line-height: 1;
   text-align: center;
@@ -172,7 +172,7 @@ export const SEngravingTagline = styled.span`
 
 export const SEngravingCardTitle = styled(Text)`
   font-family: var(--font-main), sans-serif;
-  font-size: clamp(1.35rem, 14cqi, 3.2rem);
+  ${font("title-fluid-lg")}
   font-weight: 700;
   line-height: 0.86;
   letter-spacing: 0.01em;
@@ -186,7 +186,7 @@ export const SEngravingCardTitle = styled(Text)`
 
 export const SEngravingCardDescription = styled(Text)`
   color: ${cssTheme.colors.textMuted};
-  font-size: clamp(0.9rem, 6cqi, 1.15rem);
+  ${font("text-fluid-md")}
   font-weight: 700;
   line-height: 1.2;
 `;
@@ -201,7 +201,7 @@ export const SEngravingCardAction = styled.span`
   ${radius('md')}
   color: ${cssTheme.colors.primaryText};
   background: ${cssTheme.colors.primary};
-  font-size: clamp(0.75rem, 5.2cqi, 1rem);
+  ${font("text-fluid-sm")}
   font-weight: 800;
   letter-spacing: 0.04em;
   text-align: center;

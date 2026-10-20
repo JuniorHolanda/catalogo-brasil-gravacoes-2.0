@@ -29,7 +29,7 @@ export function EngravingMethodCard({ method }: EngravingMethodCardProps) {
         </SEngravingImageTile>
       </SEngravingArtwork>
 
-      <SEngravingCardTitle type="title" headingLevel="h3" size="xlg" weight={700}>
+      <SEngravingCardTitle type="title" headingLevel="h3" size="xl" weight={700}>
         <span>Gravação</span>
         <span>{method.name}</span>
       </SEngravingCardTitle>

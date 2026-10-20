@@ -1,4 +1,5 @@
 "use client";
+import { font } from "@/styles/mixins";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -29,12 +30,12 @@ const SResetCard = styled.section`
 
 const SResetBrand = styled.p`
   color: ${cssTheme.colors.primary};
-  font-size: 0.85rem;
+  ${font("text-md")}
   font-weight: 800;
 `;
 
 const SResetHeading = styled.h1`
-  font-size: clamp(1.5rem, 5vw, 2rem);
+  ${font("title-md")}
   line-height: 1.2;
 `;
 

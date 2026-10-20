@@ -1,7 +1,7 @@
 import { cssTheme } from "@/styles/theme";
 import styled from 'styled-components';
 import { Text } from '@/components/text';
-import { flex, padding, radius } from '@/styles/mixins';
+import { flex, font, padding, radius } from "@/styles/mixins";
 
 export const SFooter = styled.footer`
   width: 100%;
@@ -34,7 +34,7 @@ export const SFooterBrand = styled.a`
 `;
 
 export const SFooterLogo = styled.span`
-  font-size: clamp(2.15rem, 8vw, 3.2rem);
+  ${font("title-xl")}
   font-weight: 800;
   letter-spacing: 0.015em;
 `;
@@ -55,7 +55,7 @@ const footerContactStyles = `
   justify-content: center;
   gap: var(--gap-sm-2);
   color: inherit;
-  font-size: 0.9rem;
+  ${font("text-md")}
   line-height: 1.35;
   text-align: left;
 
@@ -104,7 +104,7 @@ export const SFooterSignature = styled(Text)`
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   color: ${cssTheme.colors.primaryText};
   background: ${cssTheme.colors.primary};
-  font-size: 0.82rem;
+  ${font("text-sm")}
   font-weight: 500;
   text-align: center;
 

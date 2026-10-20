@@ -1,6 +1,6 @@
 import styled from "styled-components";
 import { cssTheme } from "@/styles/theme";
-import { padding, radius } from "@/styles/mixins";
+import { padding, radius, font } from "@/styles/mixins";
 
 export const SCustomerPanel = styled.main`
   width: min(100%, 70rem);
@@ -26,7 +26,7 @@ export const SCustomerPanelHeader = styled.header`
 
   h1 {
     margin: 0;
-    font-size: clamp(1.6rem, 5vw, 2.5rem);
+    ${font("title-lg")}
   }
 
   p {
@@ -51,13 +51,13 @@ export const SUploadCard = styled.section`
 
   h2 {
     margin: 0;
-    font-size: 1.1rem;
+    ${font("text-xl")}
   }
 
   p {
     margin: 0;
     color: ${cssTheme.colors.textMuted};
-    font-size: 0.92rem;
+    ${font("text-md")}
     line-height: 1.45;
   }
 `;
@@ -98,7 +98,7 @@ export const SDailyUsage = styled.div`
   ${radius("pill")}
   color: ${cssTheme.colors.text};
   background: ${cssTheme.colors.surfaceMuted};
-  font-size: 0.82rem;
+  ${font("text-sm")}
   font-weight: 700;
 `;
 
@@ -109,7 +109,7 @@ export const SFileSection = styled.section`
 
   h2 {
     margin: 0 0 var(--space-sm-1);
-    font-size: 1.2rem;
+    ${font("text-xxl")}
   }
 `;
 
@@ -135,7 +135,7 @@ export const SFileRow = styled.article`
 
   span {
     color: ${cssTheme.colors.textMuted};
-    font-size: 0.8rem;
+    ${font("text-sm")}
   }
 `;
 
@@ -157,7 +157,7 @@ export const SFileAction = styled.button`
   color: ${cssTheme.colors.text};
   background: ${cssTheme.colors.surface};
   font: inherit;
-  font-size: 0.82rem;
+  ${font("text-sm")}
   font-weight: 700;
   cursor: pointer;
 
@@ -174,5 +174,46 @@ export const SFileAction = styled.button`
 export const SPanelNotice = styled.p<{ $error?: boolean }>`
   margin: 0;
   color: ${({ $error }) => $error ? cssTheme.colors.context.danger : cssTheme.colors.textMuted};
-  font-size: 0.9rem;
+  ${font("text-md")}
+`;
+
+export const SQuoteList = styled.section`
+  display: grid;
+  gap: var(--gap-sm-2);
+  margin-top: var(--space-lg-1);
+
+  h2 {
+    margin: 0 0 var(--space-sm-1);
+    ${font("text-xxl")}
+  }
+`;
+
+export const SQuoteCard = styled.article`
+  display: grid;
+  gap: var(--gap-sm-1);
+  ${padding("md-2")}
+  ${radius("md")}
+  background: ${cssTheme.colors.surface};
+  box-shadow: ${cssTheme.shadows.low};
+
+  > header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--gap-sm-1);
+  }
+
+  strong {
+    ${font("text-lg")}
+  }
+
+  span {
+    color: ${cssTheme.colors.textMuted};
+    ${font("text-sm")}
+  }
+
+  p {
+    margin: 0;
+  }
 `;

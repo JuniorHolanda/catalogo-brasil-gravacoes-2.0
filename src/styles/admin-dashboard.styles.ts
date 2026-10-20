@@ -1,6 +1,6 @@
 import styled from "styled-components";
 import { cssTheme } from "@/styles/theme";
-import { padding, radius } from "@/styles/mixins";
+import { padding, radius, font } from "@/styles/mixins";
 
 export const SAdminDashboard = styled.main`
   width: min(100%, 76rem);
@@ -12,7 +12,7 @@ export const SAdminDashboard = styled.main`
 
   h1 {
     margin: 0;
-    font-size: clamp(1.7rem, 5vw, 2.6rem);
+    ${font("title-lg")}
   }
 
   > p {
@@ -37,11 +37,11 @@ export const SAdminStat = styled.article`
 
   span {
     color: ${cssTheme.colors.textMuted};
-    font-size: 0.86rem;
+    ${font("text-md")}
   }
 
   strong {
-    font-size: 1.5rem;
+    ${font("text-xl")}
     font-variant-numeric: tabular-nums;
   }
 `;
@@ -73,7 +73,7 @@ export const SAdminSection = styled.section`
 
   h2 {
     margin: 0;
-    font-size: 1.2rem;
+    ${font("text-xxl")}
   }
 `;
 
@@ -94,7 +94,7 @@ export const SAdminAlert = styled.article`
 
   span {
     color: ${cssTheme.colors.textMuted};
-    font-size: 0.85rem;
+    ${font("text-md")}
   }
 `;
 

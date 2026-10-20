@@ -1,6 +1,6 @@
 import styled from "styled-components";
 import { cssTheme } from "@/styles/theme";
-import { padding, radius } from "@/styles/mixins";
+import { padding, radius, font } from "@/styles/mixins";
 
 export const SServiceBanner = styled.header`
   position: relative;
@@ -45,14 +45,14 @@ export const SServiceBannerCopy = styled.div`
   }
 
   p {
-    font-size: 0.78rem;
+    ${font("text-sm")}
     font-weight: 800;
     letter-spacing: 0.1em;
     text-transform: uppercase;
   }
 
   h1 {
-    font-size: clamp(1.7rem, 6vw, 3rem);
+    ${font("title-lg")}
     line-height: 1;
     text-transform: uppercase;
   }
@@ -83,14 +83,14 @@ export const SQuoteHeading = styled.div`
   }
 
   h2 {
-    font-size: clamp(1.15rem, 3vw, 1.45rem);
+    ${font("title-lg")}
     line-height: 1.1;
   }
 
   p {
     margin-top: var(--space-sm-1);
     color: ${cssTheme.colors.textMuted};
-    font-size: 0.88rem;
+    ${font("text-md")}
     line-height: 1.35;
   }
 `;
@@ -136,7 +136,7 @@ export const SArtworkHeader = styled.div`
 export const SArtworkLegend = styled.h3`
   margin: 0;
   color: ${cssTheme.colors.textMuted};
-  font-size: 0.8rem;
+  ${font("text-sm")}
   font-weight: 800;
 `;
 
@@ -151,7 +151,7 @@ export const SRemoveEngravingButton = styled.button`
   color: ${cssTheme.colors.context.danger};
   background: ${cssTheme.colors.surface};
   font: inherit;
-  font-size: 0.75rem;
+  ${font("text-sm")}
   font-weight: 700;
   cursor: pointer;
 
@@ -192,7 +192,7 @@ export const SQuoteField = styled.label`
   min-width: 0;
   gap: var(--gap-sm-1);
   color: ${cssTheme.colors.text};
-  font-size: 0.92rem;
+  ${font("text-md")}
   font-weight: 800;
 
   input,
@@ -206,7 +206,7 @@ export const SQuoteField = styled.label`
     color: ${cssTheme.colors.text};
     background: ${cssTheme.colors.surface};
     font: inherit;
-    font-size: 0.88rem;
+    ${font("text-md")}
     font-weight: 400;
 
     &:focus-visible {
@@ -250,7 +250,7 @@ export const SQuoteUpload = styled.label<{ $disabled?: boolean }>`
   color: ${cssTheme.colors.text};
   background: color-mix(in srgb, ${cssTheme.colors.background} 70%, ${cssTheme.colors.surface});
   text-align: center;
-  font-size: 0.82rem;
+  ${font("text-sm")}
   cursor: ${({ $disabled }) => $disabled ? "wait" : "pointer"};
   opacity: ${({ $disabled }) => $disabled ? 0.72 : 1};
 
@@ -299,7 +299,7 @@ export const SArtworkFileBadge = styled.div`
   overflow: hidden;
   color: ${cssTheme.colors.text};
   background: ${cssTheme.colors.border};
-  font-size: 0.7rem;
+  ${font("text-xs")}
   font-weight: 800;
   text-align: center;
   text-overflow: ellipsis;
@@ -315,14 +315,14 @@ export const SQuotePreview = styled.section`
 
 export const SQuotePreviewLabel = styled.p`
   margin: 0;
-  font-size: 1.05rem;
+  ${font("text-lg")}
   font-weight: 800;
 `;
 
 export const SQuotePreviewAmount = styled.p`
   margin: 0;
   color: ${cssTheme.colors.text};
-  font-size: clamp(2.4rem, 12vw, 4.6rem);
+  ${font("title-display")}
   font-weight: 900;
   letter-spacing: -0.035em;
   line-height: 1;
@@ -333,7 +333,7 @@ export const SQuotePreviewMessage = styled.p`
   max-width: 34rem;
   margin: 0;
   color: ${cssTheme.colors.textMuted};
-  font-size: 0.85rem;
+  ${font("text-md")}
   line-height: 1.4;
 `;
 
@@ -345,7 +345,7 @@ export const SQuoteContact = styled.section`
 export const SQuoteContactHeading = styled.h3`
   margin: 0;
   color: ${cssTheme.colors.text};
-  font-size: 1.15rem;
+  ${font("text-xl")}
 `;
 
 export const SQuoteContactGrid = styled.div`
@@ -377,7 +377,7 @@ export const SQuoteSaveButton = styled.button`
   ${radius("md")}
   border: 0;
   color: ${cssTheme.colors.primaryText};
-  background: ${cssTheme.colors.context.pending};
+  background: ${cssTheme.colors.context.success};
   font: inherit;
   font-weight: 800;
   cursor: pointer;
@@ -404,6 +404,7 @@ export const SWhatsAppQuoteButton = styled.button`
   font-weight: 800;
   cursor: pointer;
 
+
   &:disabled {
     opacity: 0.65;
     cursor: wait;
@@ -423,6 +424,7 @@ export const SCalculateButton = styled.button<{ $unavailable?: boolean }>`
   background: ${({ $unavailable }) => $unavailable ? cssTheme.colors.surfacePanel : cssTheme.colors.primary};
   font: inherit;
   font-weight: 800;
+
   cursor: ${({ $unavailable }) => $unavailable ? "not-allowed" : "pointer"};
   opacity: ${({ $unavailable }) => $unavailable ? 0.75 : 1};
 
@@ -438,7 +440,7 @@ export const SCalculateButton = styled.button<{ $unavailable?: boolean }>`
 export const SQuoteNotice = styled.p<{ $error?: boolean }>`
   margin: 0;
   color: ${({ $error }) => $error ? cssTheme.colors.context.danger : cssTheme.colors.context.success};
-  font-size: 0.88rem;
+  ${font("text-md")}
   font-weight: 700;
   line-height: 1.4;
 
@@ -460,7 +462,7 @@ export const SServiceInformation = styled.article`
 
   h2 {
     margin: 0 0 var(--space-sm-2);
-    font-size: 1.1rem;
+    ${font("text-xl")}
   }
 
   p {

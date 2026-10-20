@@ -2,7 +2,7 @@ import { cssTheme } from "@/styles/theme";
 import Link from "next/link";
 import styled from "styled-components";
 import { Text } from "@/components/text";
-import { padding, radius } from "@/styles/mixins";
+import { padding, radius, font } from "@/styles/mixins";
 
 export const SServicePage = styled.main`
   display: flex;
@@ -24,7 +24,7 @@ export const SServiceBackLink = styled(Link)`
   align-items: center;
   gap: var(--gap-sm-2);
   color: ${cssTheme.colors.textMuted};
-  font-size: 0.95rem;
+  ${font("text-md")}
   font-weight: 700;
 
   &:hover {
@@ -75,32 +75,32 @@ export const SServiceContent = styled.div`
 
 export const SServiceKicker = styled(Text)`
   color: ${cssTheme.colors.textMuted};
-  font-size: 0.75rem;
+  ${font("text-sm")}
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 `;
 
 export const SServiceTitle = styled(Text)`
-  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  ${font("title-xxl")}
   line-height: 0.9;
   text-transform: uppercase;
 `;
 
 export const SServiceTagline = styled(Text)`
-  font-size: clamp(1.4rem, 3vw, 2rem);
+  ${font("title-md")}
   line-height: 1;
 `;
 
 export const SServiceDescription = styled(Text)`
-  font-size: 1.05rem;
+  ${font("text-lg")}
   font-weight: 700;
   line-height: 1.4;
 `;
 
 export const SServiceDetails = styled(Text)`
   color: ${cssTheme.colors.textMuted};
-  font-size: 1rem;
+  ${font("text-lg")}
   line-height: 1.65;
 `;
 

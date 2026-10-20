@@ -6,9 +6,11 @@
     "dev": "next dev --port 4000",
     "build": "next build",
     "start": "node scripts/start.mjs",
-    "lint": "eslint src middleware.ts"
+    "lint": "eslint src middleware.ts",
+    "admins:bootstrap": "node scripts/bootstrap-admins.mjs"
   },
   "dependencies": {
+    "@next/env": "16.4.0",
     "@aws-sdk/client-s3": "^3.1152.0",
     "@aws-sdk/s3-request-presigner": "^3.1152.0",
     "@better-auth/mongo-adapter": "^1.7.10",

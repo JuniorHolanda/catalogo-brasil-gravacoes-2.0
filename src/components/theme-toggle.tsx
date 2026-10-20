@@ -4,7 +4,7 @@ import { cssTheme } from "@/styles/theme";
 
 import styled from "styled-components";
 import { useTheme } from "@/components/theme-provider";
-import { flex, focusRing, radius, transition, visuallyHidden } from "@/styles/mixins";
+import { flex, focusRing, radius, transition, visuallyHidden, font } from "@/styles/mixins";
 
 const SButton = styled.button`
   ${flex({ align: "center", justify: "center" })}
@@ -25,7 +25,7 @@ const SButton = styled.button`
 `;
 
 const SIcon = styled.span`
-  font-size: 1.25rem;
+  ${font("text-xxl")}
   line-height: 1;
 `;
 

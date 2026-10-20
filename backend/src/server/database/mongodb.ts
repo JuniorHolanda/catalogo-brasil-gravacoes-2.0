@@ -117,10 +117,14 @@ declare global {
 }
 
 export function getMongoClient(): MongoClient {
-  const uri = process.env.MONGODB_URI;
+  const uri = process.env.MONGODB_URI?.trim();
 
   if (!uri) {
     throw new Error("MONGODB_URI não está configurada no ambiente do servidor.");
+  }
+
+  if (!/^mongodb(?:\+srv)?:\/\//i.test(uri)) {
+    throw new Error("MONGODB_URI invalid: use mongodb:// or mongodb+srv:// without outer quotes.");
   }
 
   if (!global._brasilGravacoesMongoClient) {

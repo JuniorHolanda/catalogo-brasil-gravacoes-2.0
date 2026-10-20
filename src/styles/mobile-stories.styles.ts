@@ -1,7 +1,7 @@
 import { cssTheme } from "@/styles/theme";
 import styled, { css, keyframes } from 'styled-components';
 import { Text } from '@/components/text';
-import { elevation, flex, padding, radius } from '@/styles/mixins';
+import { elevation, flex, font, padding, radius } from "@/styles/mixins";
 import type { PaletteToken } from '@/styles/theme';
 
 /** Preenche a faixa ativa no mesmo intervalo usado pelo autoplay. */
@@ -36,7 +36,7 @@ export const SStoriesIntro = styled.div`
 
   > span {
     color: ${cssTheme.colors.textMuted};
-    font-size: 0.68rem;
+    ${font("text-xs")}
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -44,7 +44,7 @@ export const SStoriesIntro = styled.div`
   `;
 
 export const SStoriesTitle = styled(Text)`
-  font-size: 1.05rem;
+  ${font("text-lg")}
   font-weight: 700;
   letter-spacing: 0.01em;
 `;
@@ -59,7 +59,7 @@ export const SCounter = styled.span`
   ${radius('pill')}
   color: ${cssTheme.colors.textMuted};
   background: ${cssTheme.colors.surfaceMuted};
-  font-size: 0.68rem;
+  ${font("text-xs")}
   font-variant-numeric: tabular-nums;
   font-weight: 700;
 `;
@@ -491,7 +491,7 @@ export const STextDecoration = styled.span`
 
 export const SStoryTextMark = styled.span`
   position: relative;
-  font-size: 0.65rem;
+  ${font("text-2xs")}
   font-weight: 800;
   letter-spacing: 0.14em;
 `;
@@ -499,7 +499,7 @@ export const SStoryTextMark = styled.span`
 export const SStoryTextBody = styled(Text)`
   position: relative;
   max-width: 17rem;
-  font-size: clamp(1.8rem, 8vw, 2.6rem);
+  ${font("title-lg")}
   font-weight: 600;
   letter-spacing: -0.06em;
   line-height: 1.02;
@@ -523,7 +523,7 @@ export const SStoryCopy = styled.div<StoryCopyProps>`
 export const SStoryTitle = styled(Text)`
   display: -webkit-box;
   overflow: hidden;
-  font-size: 1.08rem;
+  ${font("text-xl")}
   font-weight: 700;
   letter-spacing: 0.01em;
   line-height: 1.2;
@@ -535,7 +535,7 @@ export const SStoryDescription = styled(Text)`
   display: -webkit-box;
   overflow: hidden;
   max-width: 27rem;
-  font-size: 0.82rem;
+  ${font("text-sm")}
   line-height: 1.4;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -547,12 +547,12 @@ export const SStorySwipeLink = styled.a`
   align-items: center;
   gap: var(--gap-sm-1);
   color: ${cssTheme.palette.white};
-  font-size: 0.68rem;
+  ${font("text-xs")}
   text-decoration: none;
   animation: ${whatsappArrowMotion} 1.2s ease-in-out infinite;
 
   small {
-    font-size: large;
+    ${font("text-lg")}
     font-weight: 600;
   }
 

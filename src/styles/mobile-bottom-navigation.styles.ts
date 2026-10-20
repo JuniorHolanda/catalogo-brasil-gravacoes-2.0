@@ -2,7 +2,7 @@ import { cssTheme } from "@/styles/theme";
 import Link from "next/link";
 import styled from "styled-components";
 import type { AccountOrderStatus } from "@/lib/account";
-import { padding, radius, transition } from "@/styles/mixins";
+import { padding, radius, transition, font } from "@/styles/mixins";
 
 export const SBottomNavigation = styled.nav`
   ${padding('t-sm-2', 'b-sm-2', 'l-sm-2', 'r-sm-2', { safeArea: ["left", "right", "bottom"] })}
@@ -147,7 +147,7 @@ export const SAccountTopline = styled.div`
 `;
 
 export const SAccountHeading = styled.h2`
-  font-size: 1.15rem;
+  ${font("text-xl")}
   font-weight: 700;
 `;
 
@@ -205,12 +205,12 @@ export const SAccountIdentity = styled.div`
   gap: 0.1rem;
 
   strong {
-    font-size: 1rem;
+    ${font("text-lg")}
   }
 
   span {
     color: ${cssTheme.colors.textMuted};
-    font-size: 0.85rem;
+    ${font("text-md")}
   }
 `;
 
@@ -223,14 +223,14 @@ export const SAccountIntro = styled.p`
 
 export const SGuestHeading = styled.h2`
   color: ${cssTheme.colors.text};
-  font-size: 0.95rem;
+  ${font("text-md")}
   font-weight: 800;
   line-height: 1.25;
 `;
 
 export const SGuestDescription = styled.p`
   color: ${cssTheme.colors.textMuted};
-  font-size: 0.78rem;
+  ${font("text-sm")}
   line-height: 1.35;
 `;
 
@@ -270,7 +270,7 @@ export const SAuthField = styled.div`
 
   label {
     color: ${cssTheme.colors.text};
-    font-size: 0.78rem;
+    ${font("text-sm")}
     font-weight: 800;
     line-height: 1.2;
   }
@@ -285,7 +285,7 @@ export const SAuthInput = styled.input`
   color: ${cssTheme.colors.text};
   background: ${cssTheme.colors.surface};
   font: inherit;
-  font-size: 0.82rem;
+  ${font("text-sm")}
 
   &::placeholder {
     color: ${cssTheme.colors.textMuted};
@@ -304,7 +304,7 @@ export const SAuthDivider = styled.div`
   align-items: center;
   gap: var(--gap-sm-2);
   color: ${cssTheme.colors.textMuted};
-  font-size: 0.76rem;
+  ${font("text-sm")}
   line-height: 1;
 
   &::before,
@@ -322,7 +322,7 @@ export const SRegisterPrompt = styled.p`
   justify-content: flex-end;
   gap: 0.2rem;
   color: ${cssTheme.colors.textMuted};
-  font-size: 0.76rem;
+  ${font("text-sm")}
   text-align: right;
 
   button {
@@ -389,12 +389,12 @@ export const SAccountLogoutButton = styled.button`
 export const SAccountNotice = styled.p`
   margin-top: var(--space-sm-2);
   color: ${cssTheme.colors.textMuted};
-  font-size: 0.85rem;
+  ${font("text-md")}
 `;
 
 export const SAccountSectionHeading = styled.h3`
   margin: var(--space-md-2) 0 var(--space-sm-2);
-  font-size: 0.95rem;
+  ${font("text-md")}
   font-weight: 800;
 `;
 
@@ -414,7 +414,7 @@ export const SOrderItem = styled.li`
   ${padding('tb-sm-1', 'lr-sm-2')}
   ${radius("sm")}
   background: ${cssTheme.colors.surface};
-  font-size: 0.9rem;
+  ${font("text-md")}
 `;
 
 export const SOrderNumber = styled.strong`
@@ -430,6 +430,6 @@ export const SOrderStatus = styled.span<{ $status: AccountOrderStatus }>`
   ${({ $status }) => $status === "producing" && `background: ${cssTheme.colors.context.success};`}
   ${padding('tb-sm-1', 'lr-sm-2')}
   ${radius("sm")}
-  font-size: 0.8rem;
+  ${font("text-sm")}
   font-weight: 700;
 `;

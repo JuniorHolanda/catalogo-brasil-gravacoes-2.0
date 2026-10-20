@@ -3,6 +3,52 @@ import type { CSSProperties } from "react";
 import { css } from "styled-components";
 import type { SpaceToken, SpacingScale } from "@/styles/theme";
 
+export type FontVariant =
+  | "text-2xs"
+  | "text-xs"
+  | "text-sm"
+  | "text-md"
+  | "text-lg"
+  | "text-xl"
+  | "text-xxl"
+  | "text-fluid-sm"
+  | "text-fluid-md"
+  | "title-sm"
+  | "title-md"
+  | "title-lg"
+  | "title-xl"
+  | "title-xxl"
+  | "title-display"
+  | "title-fluid-sm"
+  | "title-fluid-lg";
+
+const fontSizes: Record<FontVariant, string> = {
+  "text-2xs": "0.65rem",
+  "text-xs": "0.7rem",
+  "text-sm": "0.75rem",
+  "text-md": "0.875rem",
+  "text-lg": "clamp(1rem, 2.4vw, 1.2rem)",
+  "text-xl": "clamp(1.125rem, 3vw, 1.5rem)",
+  "text-xxl": "clamp(1.25rem, 3.5vw, 1.75rem)",
+  "text-fluid-sm": "clamp(0.75rem, 5.2cqi, 1rem)",
+  "text-fluid-md": "clamp(0.9rem, 6cqi, 1.15rem)",
+  "title-sm": "clamp(1.25rem, 3vw, 1.5rem)",
+  "title-md": "clamp(1.5rem, 3.5vw, 2rem)",
+  "title-lg": "clamp(1.75rem, 4vw, 2.5rem)",
+  "title-xl": "clamp(2.25rem, 5vw, 3.5rem)",
+  "title-xxl": "clamp(2.5rem, 7vw, 5.5rem)",
+  "title-display": "clamp(2.4rem, 12vw, 4.6rem)",
+  "title-fluid-sm": "clamp(1.35rem, 10cqi, 2.1rem)",
+  "title-fluid-lg": "clamp(1.35rem, 14cqi, 3.2rem)",
+};
+
+/** Aplica um tamanho tipográfico compartilhado para texto ou título. */
+export function font(variant: FontVariant) {
+  return css`
+    font-size: ${fontSizes[variant]};
+  `;
+}
+
 export type FlexAlignment = "top" | "center" | "bottom";
 export type FlexDirection = "row" | "column";
 

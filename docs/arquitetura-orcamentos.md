@@ -1,103 +1,45 @@
-# Serviços, pedidos e orçamentos
+# Orçamentos, gravações e pedidos
 
-## Catálogo e páginas
+O README contém o resumo do produto e das integrações. Esta página detalha o fluxo de orçamento implementado pela API.
 
-`src/data/engraving-methods.json` é o catálogo compartilhado pelo site e pela API. Cada serviço contém seu `slug`, nome, produtos, descrição e a configuração `supportsPreQuote`. A rota `/servicos/[slug]` gera uma página por serviço e carrega o formulário correspondente.
+## Catálogo e preços
 
-O navegador envia o `slug` e o nome exibido para `POST /api/quotes`. No servidor, o serviço é novamente resolvido pelo catálogo; nome, elegibilidade e produto são validados antes de gravar qualquer pedido. O valor enviado pelo navegador nunca é tratado como preço oficial.
+- Catálogo de métodos, slugs, produtos e suporte a pré-orçamento: `packages/domain/engraving-methods.json`.
+- Tabela de preço automática inicial: `backend/src/server/quotes/pricing-table.json`.
+- Cálculo e serialização: `backend/src/server/quotes/quote-pricing.ts` e `quote-service.ts`.
+- O servidor é a fonte do valor oficial; o navegador só solicita a prévia e apresenta o resultado.
 
-## Envio de pedido
+A tabela atual cobre Tampografia, com grupos para gravação de até 7 × 60 mm e até 40 × 40 mm conforme o produto. A primeira faixa de cada grupo é preço fechado para o lote; as faixas seguintes são preço por peça. A configuração da tabela mantém os valores concretos e suas faixas.
 
-1. A pessoa escolhe produto e quantidade e adiciona uma ou mais gravações. Cada gravação tem lado/local, dimensões, quantidade de cores e um arquivo opcional.
-2. Cada arquivo passa pela API autenticada, respeitando o limite de 5 MB, é associado à conta e fica no bucket privado R2.
-3. A prévia é consultada em `POST /api/quotes/preview` e calculada no servidor. Essa rota não grava pedido nem aceita um preço calculado pelo navegador como oficial.
-4. O formulário pode guardar um rascunho em `sessionStorage` no navegador. Sem sessão, ao gerar o pedido, o site abre o cadastro/entrada. O pedido continua após o cadastro por e-mail; se o acesso Google recarregar a página, os campos ficam temporariamente na sessão do navegador.
-5. `POST /api/quotes` valida os campos de contato e orçamento e grava o pedido na coleção `customerQuotes`, associado ao ID da sessão. O documento inclui um retrato dos dados de contato, um array `engravings` com dimensões, cores, lado/local e referência do arquivo, além da cópia do cálculo e versão da tabela usadas naquele pedido.
-6. `GET /api/quotes` devolve apenas os três pedidos mais recentes da conta, usados no menu do usuário.
+O cálculo automático considera uma cor por gravação. Outro serviço, produto não listado, dimensão acima do limite ou quantidade de cores diferente de uma leva a análise manual. As faixas de quantidade são consecutivas: depois de uma faixa que termina em `N`, a próxima começa em `N + 1`.
 
-A gravação exige sessão autenticada. O servidor ignora IDs de usuário vindos do formulário e verifica se o arquivo anexado pertence à mesma conta. A API só permite anexar arquivos completos e existentes na coleção `customerFiles`.
+## Fluxo
 
-## Coleções usadas
+1. O cliente escolhe serviço, produto, quantidade e uma ou mais gravações. Cada gravação representa um lado/local e contém dimensões, quantidade de cores e um arquivo opcional.
+2. `POST /api/v1/quotes/preview` valida o serviço e produto no servidor e calcula a prévia sem gravar um documento.
+3. O cliente precisa estar autenticado para enviar um orçamento. Para serviços sem preço automático, a solicitação segue como `requestType: "whatsapp"` e fica disponível para análise da equipe.
+4. `POST /api/v1/quotes` valida novamente os campos e calcula o preço no servidor. Para cada gravação com arquivo, confirma que o arquivo completo pertence ao usuário autenticado.
+5. A API grava o documento na coleção `quotes` com dados de contato, produto, quantidade, artes, status e uma cópia versionada da tabela/cálculo.
+6. Um orçamento pode ser atualizado pelo proprietário enquanto estiver aguardando; a administração pode tratar os status permitidos.
+7. `POST /api/v1/orders` aceita apenas um `quoteId` válido com status aprovado. O pedido é gravado em `orders` com cópia dos dados do orçamento e referência de origem.
 
-- `user`, `session` e outras coleções do Better Auth: contas e sessões.
-- `customerQuotes`: referência, usuário, serviço, retrato dos dados de contato, produto, quantidade, array `engravings`, status e datas. O MongoDB guarda esses objetos como documentos BSON, sem serializar o array como uma string JSON.
-- `customerFiles`: metadados dos arquivos privados guardados no R2.
-- `customers`: cadastros enviados pelo formulário de contato.
+## Validação de entrada
 
-As coleções e seus índices são preparados pelo código do Next.js na primeira utilização. O navegador não conecta diretamente ao Atlas.
+- Quantidade: de 1 a 100.000 peças.
+- Artes/gravações: de 1 a 100 por orçamento.
+- Cada gravação informa local/lado, largura e altura em milímetros e de 1 a 16 cores.
+- Um item de gravação aceita no máximo um `fileId`. A API verifica proprietário e estado do arquivo no MongoDB antes de associá-lo.
+- Contatos incluem nome, empresa, telefone, celular, CNPJ, título e mensagem; nome, título, mensagem e um telefone ou celular são necessários.
 
-Um pedido com duas artes fica estruturado assim na coleção `customerQuotes`:
+## Modelo gravado
 
-```json
-{
-  "customer": {
-    "name": "Nome do cliente",
-    "company": "Empresa",
-    "phone": "1133334444",
-    "mobile": "11999998888",
-    "cnpj": "12345678000199",
-    "title": "Gravação em suporte",
-    "message": "Detalhes do pedido"
-  },
-  "product": "Suporte retrátil para celular",
-  "quantity": 100,
-  "engravings": [
-    {
-      "location": "Frente",
-      "logoWidthMm": 20,
-      "logoHeightMm": 10,
-      "colorCount": 1,
-      "customerFileId": "..."
-    },
-    {
-      "location": "Verso",
-      "logoWidthMm": 30,
-      "logoHeightMm": 15,
-      "colorCount": 1,
-      "customerFileId": "..."
-    }
-  ],
-  "pricing": {
-    "status": "calculated",
-    "currency": "BRL",
-    "tableId": "tampografia-v2",
-    "tableVersion": 2,
-    "totalCents": 33000,
-    "lines": [
-      {
-        "engravingNumber": 1,
-        "location": "Frente",
-        "pricingGroupId": "tampografia-logo-40x40mm",
-        "tierMinQuantity": 1,
-        "tierMaxQuantity": 100,
-        "kind": "fixedBatch",
-        "quantity": 100,
-        "amountCents": 16500,
-        "lineTotalCents": 16500
-      },
-      {
-        "engravingNumber": 2,
-        "location": "Verso",
-        "pricingGroupId": "tampografia-logo-40x40mm",
-        "tierMinQuantity": 1,
-        "tierMaxQuantity": 100,
-        "kind": "fixedBatch",
-        "quantity": 100,
-        "amountCents": 16500,
-        "lineTotalCents": 16500
-      }
-    ]
-  },
-  "status": "awaiting"
-}
-```
+Um documento `quotes` guarda, em termos gerais:
 
-Os arquivos continuam no R2; o documento guarda as referências. A ordem dos objetos em `engravings` preserva a sequência das gravações no formulário.
+- `ownerUserId`, número e datas do orçamento;
+- slug e nome do serviço, tipo de solicitação, produto e quantidade;
+- cópia dos dados de contato;
+- `engravings[]` com local, dimensões, cores e `customerFileId` opcional;
+- `pricing` com estado do cálculo, moeda, identificação/versão da tabela, total em centavos e linhas calculadas;
+- status do orçamento.
 
-## Regras de orçamento
-
-`src/server/quotes/pricing-table.json` contém a primeira tabela automática: Tampografia, com o grupo de logo de 7 × 60 mm e o grupo de 40 × 40 mm. No primeiro grupo, os produtos precisam respeitar largura máxima de 7 mm e altura máxima de 60 mm; no segundo, largura e altura ficam limitadas a 40 mm. A primeira faixa de cada grupo é tratada como valor fechado do lote; as demais são valores por peça. Cada gravação é calculada separadamente e somada ao pedido.
-
-As faixas são contínuas: quando uma faixa termina em `N`, a próxima começa em `N + 1` (por exemplo, 1.000 → 1.001). A tabela atual cobre uma cor por gravação. Produtos sem regra, dimensões acima do máximo ou mais de uma cor geram um pedido para análise manual, sem total automático.
-
-Para uma nova técnica, adicione os dados ao catálogo e configure seus produtos e a elegibilidade de pré-orçamento. As páginas serão geradas a partir do mesmo catálogo e a API usará a mesma lista para validar o pedido.
+Um pedido preserva a identificação do orçamento de origem, o usuário proprietário e a cópia do serviço, cliente, produto, quantidade, gravações e preço aprovado. Assim, alterações posteriores na tabela de preços não mudam o histórico já enviado.

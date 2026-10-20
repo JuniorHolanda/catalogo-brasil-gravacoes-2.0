@@ -21,16 +21,25 @@ declare global {
 }
 
 export function getR2Config(): R2Config {
-  const accountId = process.env.CLOUDFLARE_R2_ACCOUNT_ID;
-  const accessKeyId = process.env.CLOUDFLARE_R2_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY;
-  const bucketName = process.env.CLOUDFLARE_R2_BUCKET;
+  const accountId = process.env.CLOUDFLARE_R2_ACCOUNT_ID?.trim();
+  const accessKeyId = process.env.CLOUDFLARE_R2_ACCESS_KEY_ID?.trim();
+  const secretAccessKey = process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY?.trim();
+  const bucketName = process.env.CLOUDFLARE_R2_BUCKET?.trim();
 
   if (!accountId || !accessKeyId || !secretAccessKey || !bucketName) {
     throw new Error("As variáveis do Cloudflare R2 não estão configuradas no servidor.");
   }
 
   return { accountId, accessKeyId, secretAccessKey, bucketName };
+}
+
+export function isR2Configured(): boolean {
+  return Boolean(
+    process.env.CLOUDFLARE_R2_ACCOUNT_ID?.trim()
+    && process.env.CLOUDFLARE_R2_ACCESS_KEY_ID?.trim()
+    && process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY?.trim()
+    && process.env.CLOUDFLARE_R2_BUCKET?.trim(),
+  );
 }
 
 export function getR2Client(): S3Client {

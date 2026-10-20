@@ -13,6 +13,8 @@ import {
   SFileRow,
   SFileSection,
   SPanelNotice,
+  SQuoteCard,
+  SQuoteList,
   SUploadButton,
   SUploadCard,
 } from "@/styles/customer-dashboard.styles";
@@ -33,11 +35,30 @@ type FileListResponse = {
   dailyLimit: number;
 };
 
+type CustomerQuote = {
+  id: string;
+  number: string;
+  serviceName: string;
+  product: string;
+  quantity: number;
+  status: "awaiting" | "approved" | "rejected" | "producing" | "problem";
+  createdAt: string;
+  pricing?: { status?: string; totalCents?: number };
+  engravings?: Array<{ customerFileId?: string }>;
+};
+
 async function requestFileList(): Promise<FileListResponse> {
   const response = await apiFetch("/api/v1/files", { cache: "no-store" });
   const result = await response.json();
   if (!response.ok) throw new Error(result.error || "Não foi possível carregar os arquivos.");
   return result as FileListResponse;
+}
+
+async function requestQuoteList(): Promise<CustomerQuote[]> {
+  const response = await apiFetch("/api/v1/quotes", { cache: "no-store" });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || "Não foi possível carregar seus orçamentos.");
+  return (result as { quotes: CustomerQuote[] }).quotes;
 }
 
 const MAX_FILE_BYTES = 5_000_000;
@@ -57,6 +78,7 @@ function dateLabel(value: string) {
 
 export function CustomerFilesPanel() {
   const [files, setFiles] = useState<CustomerFile[]>([]);
+  const [quotes, setQuotes] = useState<CustomerQuote[]>([]);
   const [dailyUploads, setDailyUploads] = useState(0);
   const [dailyLimit, setDailyLimit] = useState(15);
   const [notice, setNotice] = useState("");
@@ -64,6 +86,8 @@ export function CustomerFilesPanel() {
   const [uploadingName, setUploadingName] = useState("");
   const [busyFileId, setBusyFileId] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isQuotesLoading, setIsQuotesLoading] = useState(true);
+  const [quotesError, setQuotesError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   const loadFiles = useCallback(async () => {
@@ -97,6 +121,23 @@ export function CustomerFilesPanel() {
       })
       .finally(() => {
         if (isMounted) setIsLoading(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    void requestQuoteList()
+      .then((data) => {
+        if (isMounted) setQuotes(data);
+      })
+      .catch((error: unknown) => {
+        if (isMounted) setQuotesError(error instanceof Error ? error.message : "Não foi possível carregar seus orçamentos.");
+      })
+      .finally(() => {
+        if (isMounted) setIsQuotesLoading(false);
       });
     return () => {
       isMounted = false;
@@ -229,11 +270,36 @@ export function CustomerFilesPanel() {
     <SCustomerPanel>
       <SCustomerPanelHeader>
         <div>
-          <h1>Meus arquivos</h1>
-          <p>Envie e acompanhe os arquivos dos seus pedidos.</p>
+          <h1>Minha conta</h1>
+          <p>Acompanhe seus orçamentos e os arquivos dos seus pedidos.</p>
         </div>
         <Link href="/">Voltar ao início</Link>
       </SCustomerPanelHeader>
+
+      <SQuoteList aria-labelledby="quotes-title">
+        <h2 id="quotes-title">Meus orçamentos</h2>
+        {isQuotesLoading && <SPanelNotice>Carregando orçamentos…</SPanelNotice>}
+        {!isQuotesLoading && quotesError && <SPanelNotice $error role="status">{quotesError}</SPanelNotice>}
+        {!isQuotesLoading && !quotesError && quotes.length === 0 && (
+          <SPanelNotice>Seus orçamentos enviados aparecerão aqui.</SPanelNotice>
+        )}
+        {quotes.map((quote) => (
+          <SQuoteCard key={quote.id}>
+            <header>
+              <strong>{quote.number}</strong>
+              <span>{new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(quote.createdAt))}</span>
+            </header>
+            <p>{quote.serviceName} · {quote.product} · {quote.quantity} unidade(s)</p>
+            <span>
+              Status: {quote.status === "awaiting" ? "Aguardando análise" : quote.status === "approved" ? "Aprovado" : quote.status === "rejected" ? "Recusado" : quote.status === "producing" ? "Em produção" : "Precisa de atenção"}
+              {quote.engravings?.some((engraving) => engraving.customerFileId) ? " · Arte anexada" : ""}
+            </span>
+            {quote.pricing?.status === "calculated" && typeof quote.pricing.totalCents === "number" && (
+              <span>Total estimado: {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(quote.pricing.totalCents / 100)}</span>
+            )}
+          </SQuoteCard>
+        ))}
+      </SQuoteList>
 
       <SUploadCard aria-labelledby="upload-title">
         <h2 id="upload-title">Adicionar arquivos</h2>

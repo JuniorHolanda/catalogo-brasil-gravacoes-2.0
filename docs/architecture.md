@@ -1,49 +1,39 @@
-# Arquitetura da aplicação
+# Arquitetura e operação
 
-O repositório usa npm workspaces. A aplicação em `src/` é o frontend Next.js, implantado na Vercel. A API é outra aplicação Next.js em `backend/`, preparada para Render. O catálogo público de serviços fica em `packages/domain/` para que as duas aplicações usem os mesmos nomes e slugs.
+O guia completo de tecnologias, configuração local, variáveis e deploy fica no [README principal](../README.md). Esta página registra detalhes da arquitetura de produção.
 
-## Banco de dados
+## Aplicações e fronteiras
 
-MongoDB Atlas usa coleções, em vez de tabelas SQL. As coleções de negócio são:
+- **Frontend:** aplicação Next.js independente em `src/`, publicada na Vercel.
+- **API REST:** aplicação Next.js independente em `backend/`, publicada no Render. Os handlers ficam em `backend/src/app/api` e as regras privadas em `backend/src/server`.
+- **Dashboard administrativa:** aplicação Next.js independente em `dashboard/`, publicada como um serviço separado no Render.
+- **Domínio compartilhado:** catálogo de métodos e produtos em `packages/domain/engraving-methods.json`.
+- **Dados:** MongoDB Atlas, no banco `brasil-gravacoes`.
+- **Arquivos:** Cloudflare R2; o MongoDB armazena os metadados e referências dos objetos.
+- **E-mail:** Resend para confirmação de cadastro e alertas de armazenamento.
 
-- `users`: usuários e campos de autenticação gerenciados por Better Auth. No primeiro acesso da API, os documentos antigos da coleção `user` são copiados para `users` sem apagar a coleção de origem.
-- `quotes`: solicitações e pré-orçamentos; as gravações e os dados de contato ficam incorporados no documento do orçamento.
-- `orders`: pedidos aceitos, com uma cópia dos dados do orçamento para preservar o histórico.
+A UI não importa serviços privados do backend nem se conecta diretamente a Atlas/R2. Ela chama endpoints HTTPS, e a API autentica as requisições e aplica as regras de negócio.
 
-Outras coleções armazenam solicitações de contato, arquivos enviados, controle de cota de armazenamento e sessões de autenticação. Elas são suporte do sistema e não substituem as três coleções de negócio acima.
+O site e a dashboard usam origens separadas, ambas incluídas em `FRONTEND_ORIGINS`. A dashboard encaminha as chamadas autenticadas à API pelo endereço privado do Render.
 
-Um orçamento só vira pedido quando estiver com status `approved` e o cliente aceitar. O endpoint de criação do pedido recebe `{ "quoteId": "..." }` e rejeita orçamento ainda pendente ou recusado.
+## Persistência
 
-## Rotas REST
+As principais coleções MongoDB são `users`, `customers`, `quotes` e `orders`. Coleções auxiliares mantêm metadados de arquivos, contadores de uploads diários, quota global do R2 e estado dos alertas.
 
-Todas as rotas da API de negócio usam `/api/v1`. A autenticação permanece em `/api/auth`.
+As coleções e índices são inicializados pela API no primeiro uso. Compatibilidade com dados legados copia documentos de `user` para `users` e de `customerQuotes` para `quotes`, preservando as coleções originais.
 
-| Recurso | Rotas | Acesso |
-| --- | --- | --- |
-| Usuários | `GET/PATCH /api/v1/users/me`, CRUD em `/api/v1/users` e `/api/v1/users/:id` | perfil próprio; operações administrativas para a lista e outros usuários |
-| Orçamentos | `GET/POST /api/v1/quotes`, `GET/PATCH/DELETE /api/v1/quotes/:id` | usuário dono; administração pode acessar todos |
-| Pedidos | `GET/POST /api/v1/orders`, `GET/PATCH/DELETE /api/v1/orders/:id` | usuário dono; administração pode acessar todos |
-| Arquivos | `/api/v1/files/...` | usuário autenticado, com propriedade checada no servidor |
-| Serviços | `GET /api/v1/services` e `/api/v1/services/:slug` | público |
-| Saúde | `GET /api/health` | público |
+## Deploy
 
-As operações de administrador exigem sessão Better Auth com papel `admin`. O e-mail definido em `ADMIN_EMAILS` só é promovido depois de verificado. O cadastro por e-mail envia confirmação pelo Resend; Google também retorna e-mail verificado pelo provedor. O padrão local usa `juniorholanda@outlook.com`.
+O Blueprint em [render.yaml](../render.yaml) mantém os serviços da API e da dashboard na raiz do repositório porque o lockfile e os npm workspaces são compartilhados. A API executa `npm ci && npm run api:build`, inicia com `npm run api:start` e verifica `/api/health`. A dashboard usa `npm run dashboard:build` e `npm run dashboard:start`.
 
-## Desenvolvimento local
+A Vercel publica o frontend pela raiz, usando `npm run build`. A variável `NEXT_PUBLIC_API_URL` aponta para a URL-base pública da API e configura o destino dos rewrites de `/api/*`; `NEXT_PUBLIC_DASHBOARD_URL` informa o destino do atalho `/admin`. No Render, `FRONTEND_ORIGINS` contém as origens exatas do frontend e da dashboard, e `BETTER_AUTH_URL` aponta para a origem pública do frontend, incluindo em desenvolvimento (`http://localhost:3000`).
 
-Copie as variáveis de `backend/.env.example` para `backend/.env.local` e as de `.env.example` para `.env.local` na raiz. Execute os processos em terminais separados:
+## Sessões entre domínios
 
-```sh
-npm run dev
-npm run api:dev
-```
+Em produção, a API usa cookies `HttpOnly`, `Secure` e `SameSite=Lax` e valida origens configuradas. Cada app encaminha `/api/auth/*` pelo próprio domínio, sem depender de cookies de terceiros. Confirmações por e-mail e o callback OAuth (`/api/auth/callback/google`) usam a URL pública do frontend. MongoDB, R2 e as regras de negócio continuam exclusivamente na API do Render.
 
-O frontend inicia na porta 3000 e a API na 4000. Não coloque segredos do MongoDB, Better Auth ou R2 no `.env.local` do frontend.
+Consulte [docs/dashboard-admin.md](dashboard-admin.md) para o fluxo de login, provisionamento dos perfis administrativos e configuração do deploy.
 
-## Render e Vercel
+## Limite do R2
 
-O blueprint `render.yaml` configura o serviço API. Mantenha o diretório raiz do serviço Render como a raiz do repositório, pois o lockfile e o pacote compartilhado ficam nela. O build instala os workspaces e compila apenas `backend/`.
-
-Configure em Render as variáveis secretas de `backend/.env.example`. Use `BETTER_AUTH_URL` com a URL pública completa da API e `FRONTEND_ORIGINS` com a origem exata da Vercel, sem barra final. Na Vercel, configure `NEXT_PUBLIC_API_URL` com a URL da API. No Google OAuth, cadastre o callback `https://<api>/api/auth/callback/google` como URI de redirecionamento autorizada.
-
-Para a sessão com cookies funcionar de forma estável entre sites, configure um domínio próprio para a API, como `api.seudominio.com`, e use o mesmo domínio raiz no frontend. A API exige origem CORS explícita e usa cookies `HttpOnly`, `Secure` e `SameSite=None` em produção.
+A API registra o uso inicial do bucket, reserva espaço durante uploads e bloqueia novas operações pela API no limite lógico de 9 GB. O limite depende de todo acesso de gravação passar pelo backend; mantenha o bucket exclusivo do projeto e não permita gravações externas que contornem a quota.

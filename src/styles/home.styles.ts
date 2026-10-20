@@ -1,7 +1,7 @@
 import { cssTheme } from "@/styles/theme";
 import styled from 'styled-components';
 import { Text } from '@/components/text';
-import { flex, padding, radius } from '@/styles/mixins';
+import { flex, font, padding, radius } from "@/styles/mixins";
 
 export const SPage = styled.main`
   ${flex({ direction: 'column', align: 'top' })};
@@ -30,7 +30,7 @@ export const SHeader = styled.header`
 
 export const SBrand = styled.a`
   ${flex({ align: 'center', gap: 'sm-2' })}
-  font-size: 0.95rem;
+  ${font("text-md")}
   font-weight: 700;
   letter-spacing: -0.02em;
 `;
@@ -43,7 +43,7 @@ export const SBrandMark = styled.span`
   ${radius('sm')}
   color: ${cssTheme.colors.primaryText};
   background: ${cssTheme.colors.primary};
-  font-size: 0.75rem;
+  ${font("text-sm")}
   letter-spacing: 0.04em;
 `;
 
@@ -60,7 +60,7 @@ export const SHero = styled.section`
 
 export const SEyebrow = styled(Text)`
   color: ${cssTheme.colors.textMuted};
-  font-size: 0.72rem;
+  ${font("text-xs")}
   font-weight: 700;
   letter-spacing: 0.13em;
   text-transform: uppercase;
@@ -76,6 +76,6 @@ export const STitle = styled(Text)`
 export const SDescription = styled(Text)`
   max-width: 38rem;
   color: ${cssTheme.colors.textMuted};
-  font-size: clamp(1rem, 2vw, 1.15rem);
+  ${font("text-lg")}
   line-height: 1.7;
 `;
