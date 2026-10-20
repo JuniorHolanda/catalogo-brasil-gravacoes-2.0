@@ -25,6 +25,27 @@ function buildAuth() {
       enabled: true,
       disableSignUp: !availability.emailSignUp,
       requireEmailVerification: true,
+      resetPasswordTokenExpiresIn: 60 * 60,
+      sendResetPassword: async ({ user, url }) => {
+        const apiKey = process.env.RESEND_API_KEY;
+        const from = process.env.STORAGE_ALERT_FROM;
+        if (!apiKey || !from) throw new Error("Configure RESEND_API_KEY e STORAGE_ALERT_FROM para enviar a redefinição de senha.");
+        const response = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            from,
+            to: [user.email],
+            subject: "Redefina sua senha | Brasil Gravações",
+            text: `Olá, ${user.name}. Recebemos uma solicitação para redefinir sua senha. Use este link em até uma hora: ${url}\n\nSe você não solicitou a redefinição, ignore esta mensagem.`,
+          }),
+          signal: AbortSignal.timeout(8_000),
+        });
+        if (!response.ok) throw new Error("O serviço de e-mail não aceitou a mensagem de redefinição de senha.");
+      },
     },
     emailVerification: {
       sendOnSignUp: true,

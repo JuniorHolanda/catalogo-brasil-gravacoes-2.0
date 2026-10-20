@@ -61,7 +61,7 @@ const orderStatusLabels: Record<AccountOrderStatus, string> = {
 /** Mostra os atalhos da conta conforme a sessão autenticada disponível. */
 export function AccountMenu({ user, onClose, initialAuthMode = "signIn", standalone = false }: AccountMenuProps) {
   const [authNotice, setAuthNotice] = useState("");
-  const [authMode, setAuthMode] = useState<"signIn" | "signUp">(initialAuthMode);
+  const [authMode, setAuthMode] = useState<"signIn" | "signUp" | "forgotPassword">(initialAuthMode);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [availability, setAvailability] = useState<AuthAvailability | null>(null);
   const [availabilityFailed, setAvailabilityFailed] = useState(false);
@@ -198,6 +198,32 @@ export function AccountMenu({ user, onClose, initialAuthMode = "signIn", standal
     }
   }
 
+  async function requestPasswordReset(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (isSubmitting) return;
+    if (!availability?.verificationEmail) {
+      setAuthNotice("A recuperação por e-mail está temporariamente indisponível. Tente novamente mais tarde.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setAuthNotice("");
+    const email = String(new FormData(event.currentTarget).get("email") ?? "").trim();
+    try {
+      const result = await authClient.requestPasswordReset({
+        email,
+        redirectTo: `${window.location.origin}/redefinir-senha`,
+      });
+      setAuthNotice(result.error
+        ? authErrorMessage(result.error)
+        : "Se houver uma conta com esse e-mail, enviaremos um link para redefinir a senha. Confira também a pasta de spam.");
+    } catch {
+      setAuthNotice("Não foi possível solicitar a redefinição. Tente novamente em instantes.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   return (
     <MotionAccountOverlay
       animate={{ opacity: 1 }}
@@ -293,13 +319,17 @@ export function AccountMenu({ user, onClose, initialAuthMode = "signIn", standal
         ) : (
           <>
             <SGuestHeading id="guest-login-title">
-              {authMode === "signIn" ? "Entre para salvar seu orçamento" : "Crie sua conta"}
+              {authMode === "signIn"
+                ? "Entre para salvar seu orçamento"
+                : authMode === "signUp" ? "Crie sua conta" : "Redefina sua senha"}
             </SGuestHeading>
             <SGuestDescription id="guest-login-description">
-              Seu orçamento atual será mantido após o login.
+              {authMode === "forgotPassword"
+                ? "Informe o e-mail da conta e enviaremos um link seguro para criar outra senha."
+                : "Seu orçamento atual será mantido após o login."}
             </SGuestDescription>
 
-            {availability?.google && (
+            {authMode !== "forgotPassword" && availability?.google && (
               <>
                 <SGoogleLoginButton onClick={signInWithGoogle} disabled={isSubmitting} type="button">
                   <FaGoogle aria-hidden="true" />
@@ -309,7 +339,7 @@ export function AccountMenu({ user, onClose, initialAuthMode = "signIn", standal
               </>
             )}
 
-            <SAuthForm onSubmit={submitCredentials}>
+            <SAuthForm onSubmit={authMode === "forgotPassword" ? requestPasswordReset : submitCredentials}>
               {authMode === "signUp" && (
                 <SAuthField>
                   <label htmlFor="account-name">Nome</label>
@@ -340,25 +370,52 @@ export function AccountMenu({ user, onClose, initialAuthMode = "signIn", standal
                 />
               </SAuthField>
 
-              <SAuthField>
-                <label htmlFor="account-password">Senha</label>
-                <SAuthInput
-                  autoComplete={authMode === "signUp" ? "new-password" : "current-password"}
-                  id="account-password"
-                  minLength={authMode === "signUp" ? 8 : undefined}
-                  name="password"
-                  maxLength={128}
-                  disabled={isSubmitting}
-                  placeholder="Digite sua senha"
-                  required
-                  type="password"
-                />
-              </SAuthField>
+              {authMode !== "forgotPassword" && (
+                <SAuthField>
+                  <label htmlFor="account-password">Senha</label>
+                  <SAuthInput
+                    autoComplete={authMode === "signUp" ? "new-password" : "current-password"}
+                    id="account-password"
+                    minLength={authMode === "signUp" ? 8 : undefined}
+                    name="password"
+                    maxLength={128}
+                    disabled={isSubmitting}
+                    placeholder="Digite sua senha"
+                    required
+                    type="password"
+                  />
+                </SAuthField>
+              )}
 
-              <SAccountLoginButton disabled={isSubmitting || (authMode === "signUp" && !availability?.emailSignUp)} type="submit">
-                {isSubmitting ? "Aguarde..." : authMode === "signUp" ? "Cadastrar" : "Entrar"}
+              <SAccountLoginButton
+                disabled={isSubmitting || (authMode === "signUp" && !availability?.emailSignUp)}
+                type="submit"
+              >
+                {isSubmitting
+                  ? "Aguarde..."
+                  : authMode === "signUp" ? "Cadastrar" : authMode === "forgotPassword" ? "Enviar link" : "Entrar"}
               </SAccountLoginButton>
             </SAuthForm>
+
+            {authMode === "signIn" && (
+              <SRegisterPrompt>
+                <button
+                  onClick={() => {
+                    setAuthMode("forgotPassword");
+                    setAuthNotice("");
+                    setVerificationEmail("");
+                  }}
+                  disabled={isSubmitting}
+                  type="button"
+                >
+                  Esqueci minha senha
+                </button>
+              </SRegisterPrompt>
+            )}
+
+            {authMode === "forgotPassword" && availability?.verificationEmail === false && (
+              <SAccountNotice role="status">A recuperação por e-mail está temporariamente indisponível.</SAccountNotice>
+            )}
 
             {authMode === "signUp" && availability && !availability.emailSignUp && (
               <SAccountNotice role="status">O cadastro está temporariamente indisponível. Tente novamente mais tarde.</SAccountNotice>
@@ -369,18 +426,36 @@ export function AccountMenu({ user, onClose, initialAuthMode = "signIn", standal
               </SAccountNotice>
             )}
             <SRegisterPrompt>
-              {authMode === "signIn" ? "Ainda não tem uma conta?" : "Já tem uma conta?"}
-              <button
-                onClick={() => {
-                  setAuthMode((mode) => mode === "signIn" ? "signUp" : "signIn");
-                  setAuthNotice("");
-                  setVerificationEmail("");
-                }}
-                disabled={isSubmitting}
-                type="button"
-              >
-                {authMode === "signIn" ? "Cadastre-se" : "Entrar"}
-              </button>
+              {authMode === "forgotPassword" ? (
+                <>
+                  Lembrou sua senha?
+                  <button
+                    onClick={() => {
+                      setAuthMode("signIn");
+                      setAuthNotice("");
+                    }}
+                    disabled={isSubmitting}
+                    type="button"
+                  >
+                    Voltar para entrar
+                  </button>
+                </>
+              ) : (
+                <>
+                  {authMode === "signIn" ? "Ainda não tem uma conta?" : "Já tem uma conta?"}
+                  <button
+                    onClick={() => {
+                      setAuthMode((mode) => mode === "signIn" ? "signUp" : "signIn");
+                      setAuthNotice("");
+                      setVerificationEmail("");
+                    }}
+                    disabled={isSubmitting}
+                    type="button"
+                  >
+                    {authMode === "signIn" ? "Cadastre-se" : "Entrar"}
+                  </button>
+                </>
+              )}
             </SRegisterPrompt>
 
             {authNotice && <SAccountNotice role="status">{authNotice}</SAccountNotice>}

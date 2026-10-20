@@ -21,8 +21,9 @@ export function authErrorMessage(error: { code?: string; status?: number }) {
     case "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL":
       return "Já existe uma conta com este e-mail. Entre na sua conta.";
     case "EMAIL_SERVICE_UNAVAILABLE":
+    case "RESET_PASSWORD_DISABLED":
     case "EMAIL_PASSWORD_SIGN_UP_DISABLED":
-      return "O cadastro e a confirmação por e-mail estão temporariamente indisponíveis. Tente novamente mais tarde.";
+      return "O envio de e-mails está temporariamente indisponível. Tente novamente mais tarde.";
     default:
       return "Não foi possível concluir o acesso. Tente novamente em instantes.";
   }

@@ -7,6 +7,7 @@ import { getAuthAvailability } from "@/server/auth/auth-availability";
 const emailDeliveryPaths = new Set([
   "/api/auth/sign-up/email",
   "/api/auth/send-verification-email",
+  "/api/auth/request-password-reset",
 ]);
 
 async function handleAuth(request: Request) {
