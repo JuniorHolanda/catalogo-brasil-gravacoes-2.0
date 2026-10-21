@@ -38,11 +38,12 @@ export function validateCustomerSubmission(input: unknown): CustomerSubmissionRe
   }
 
   const raw = input as Record<string, unknown>;
+  const rawMobile = cleanString(raw.mobile);
   const value: CustomerSubmission = {
     name: cleanString(raw.name),
     company: cleanString(raw.company),
     phone: digitsOnly(cleanString(raw.phone)),
-    mobile: digitsOnly(cleanString(raw.mobile)),
+    mobile: digitsOnly(rawMobile),
     cnpj: digitsOnly(cleanString(raw.cnpj)),
     title: cleanString(raw.title),
     message: cleanString(raw.message),
@@ -60,20 +61,18 @@ export function validateCustomerSubmission(input: unknown): CustomerSubmissionRe
 
   if (!value.name) errors.name = "Informe seu nome.";
   if (!value.company) errors.company = "Informe o nome da empresa.";
-  if (!value.mobile) errors.mobile = "Informe seu celular com DDD.";
+  if (!value.mobile) errors.mobile = "Informe seu celular.";
+  if (value.mobile && !/^\+?[\d\s().-]+$/.test(rawMobile)) {
+    errors.mobile = "Digite somente números no celular.";
+  }
 
-  for (const field of ["phone", "mobile"] as const) {
-    if (value[field] && (value[field].length < 8 || value[field].length > 15)) {
-      errors[field] = "Informe um telefone válido, com DDD.";
-    }
+  if (value.phone && (value.phone.length < 8 || value.phone.length > 15)) {
+    errors.phone = "Informe um telefone válido, com DDD.";
   }
 
   if (value.cnpj && value.cnpj.length !== 14) {
     errors.cnpj = "O CNPJ deve conter 14 dígitos.";
   }
-
-  if (!value.title) errors.title = "Informe o título do orçamento.";
-  if (!value.message) errors.message = "Descreva o que você precisa.";
 
   return Object.keys(errors).length > 0
     ? { success: false, errors }

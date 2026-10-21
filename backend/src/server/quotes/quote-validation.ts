@@ -128,7 +128,7 @@ export function validateQuoteSubmission(input: unknown): ValidationResult<QuoteS
 
   const customer = validateCustomerSubmission(raw.customer);
   if (!customer.success) {
-    return { success: false, error: "Confira seus dados de contato. Informe nome, empresa e um celular válido com DDD." };
+    return { success: false, error: "Confira seus dados de contato. Informe nome, empresa e celular contendo números." };
   }
 
   return {

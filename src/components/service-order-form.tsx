@@ -741,6 +741,7 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
                   onChange={(event) => setCustomer((current) => ({ ...current, mobile: event.target.value }))}
                   placeholder="Digite seu número"
                   required
+                  inputMode="numeric"
                   type="tel"
                   value={customer.mobile}
                 />
