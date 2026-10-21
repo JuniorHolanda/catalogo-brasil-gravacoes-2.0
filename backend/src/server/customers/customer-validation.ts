@@ -59,10 +59,8 @@ export function validateCustomerSubmission(input: unknown): CustomerSubmissionRe
   }
 
   if (!value.name) errors.name = "Informe seu nome.";
-  if (!value.phone && !value.mobile) {
-    errors.phone = "Informe um telefone ou celular.";
-    errors.mobile = "Informe um telefone ou celular.";
-  }
+  if (!value.company) errors.company = "Informe o nome da empresa.";
+  if (!value.mobile) errors.mobile = "Informe seu celular com DDD.";
 
   for (const field of ["phone", "mobile"] as const) {
     if (value[field] && (value[field].length < 8 || value[field].length > 15)) {

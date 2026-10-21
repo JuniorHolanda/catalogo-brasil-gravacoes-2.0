@@ -718,6 +718,7 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
                   maxLength={160}
                   onChange={(event) => setCustomer((current) => ({ ...current, company: event.target.value }))}
                   placeholder="Digite o nome da empresa"
+                  required
                   value={customer.company}
                 />
               </SQuoteField>
@@ -728,7 +729,6 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
                   maxLength={32}
                   onChange={(event) => setCustomer((current) => ({ ...current, phone: event.target.value }))}
                   placeholder="Digite seu número"
-                  required={!customer.mobile.trim()}
                   type="tel"
                   value={customer.phone}
                 />
@@ -740,7 +740,7 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
                   maxLength={32}
                   onChange={(event) => setCustomer((current) => ({ ...current, mobile: event.target.value }))}
                   placeholder="Digite seu número"
-                  required={!customer.phone.trim()}
+                  required
                   type="tel"
                   value={customer.mobile}
                 />
@@ -762,7 +762,6 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
                   maxLength={160}
                   onChange={(event) => setCustomer((current) => ({ ...current, title: event.target.value }))}
                   placeholder="Adicione um título para o orçamento"
-                  required
                   value={customer.title}
                 />
               </SQuoteField>
@@ -773,7 +772,6 @@ export function ServiceOrderForm({ service }: ServiceOrderFormProps) {
                 maxLength={3000}
                 onChange={(event) => setCustomer((current) => ({ ...current, message: event.target.value }))}
                 placeholder="Adicione detalhes e observações"
-                required
                 value={customer.message}
               />
             </SQuoteField>
