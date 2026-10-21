@@ -77,9 +77,10 @@ O `backend/` usa Next.js Route Handlers para implementar endpoints JSON. É uma 
 | `/` | Página inicial e catálogo de métodos de gravação. |
 | `/servicos/[slug]` | Página dinâmica de cada serviço, com produtos, formulário e fluxo de orçamento correspondente. |
 | `/painel` | Área autenticada do cliente para seus arquivos e atividade da conta. |
-| `/admin` | Redireciona para a dashboard administrativa independente. |
+| `/admin` | Login administrativo no mesmo domínio do frontend. |
+| `/dashboard` | Painel administrativo protegido pela sessão e pelas permissões da API. |
 
-A dashboard é servida pela aplicação `dashboard/` (porta local 3100). Ela lista os orçamentos recentes, os associa às contas dos clientes e informa o estado do R2. O painel do cliente em `/painel` também mostra seus próprios orçamentos. Os detalhes de configuração estão em [docs/dashboard-admin.md](docs/dashboard-admin.md).
+A dashboard é publicada junto do frontend na Vercel; a interface compartilhada fica em `dashboard/`. Ela lista os orçamentos recentes, os associa às contas dos clientes e informa o estado do R2. O painel do cliente em `/painel` também mostra seus próprios orçamentos. Os detalhes de configuração estão em [docs/dashboard-admin.md](docs/dashboard-admin.md).
 
 A rota de serviço usa o catálogo em `packages/domain/engraving-methods.json`. A propriedade `supportsPreQuote` define se aquele método oferece cálculo automático ou segue para análise/orçamento via WhatsApp.
 

@@ -1,6 +1,6 @@
 # Dashboard administrativa
 
-A dashboard roda como uma aplicação Next.js própria em `dashboard/`, separada do site público e da API. Em desenvolvimento, `npm run dev` inicia o site em `http://localhost:3000`, a API em `http://localhost:4000` e a dashboard em `http://localhost:3100`. O caminho `/admin` do site encaminha para a origem configurada em `NEXT_PUBLIC_DASHBOARD_URL`.
+A dashboard usa uma aplicação Next.js em `dashboard/`, com suas telas integradas ao frontend publicado na Vercel. Em produção, o login fica em `/admin` e o painel em `/dashboard`, no mesmo domínio do site. A API e os dados continuam no Render. Em desenvolvimento, `npm run dev` inicia o site em `http://localhost:3000`, a API em `http://localhost:4000` e a aplicação isolada da dashboard em `http://localhost:3100`.
 
 ## Login e perfis
 
@@ -8,7 +8,7 @@ A dashboard aceita login por e-mail e senha com Better Auth. A API concede papel
 
 Para provisionar os perfis `contato@brasilgravacoes.com.br` e `vendas@brasilgravacoes.com.br`:
 
-1. Configure `ADMIN_EMAILS` com esses endereços no backend e inclua a origem da dashboard em `FRONTEND_ORIGINS`.
+1. Configure `ADMIN_EMAILS` com esses endereços no backend e inclua a origem do frontend em `FRONTEND_ORIGINS`.
 2. Defina temporariamente `ADMIN_BOOTSTRAP_PASSWORD` no ambiente local do backend.
 3. Na raiz do repositório, execute `npm run admins:bootstrap --workspace @brasil-gravacoes/backend`.
 4. Remova `ADMIN_BOOTSTRAP_PASSWORD` do ambiente após o comando terminar.
@@ -17,11 +17,11 @@ O comando cria ou atualiza os dois perfis usando o hash de senha do Better Auth,
 
 ## Render e Vercel
 
-O `render.yaml` declara um segundo serviço, `brasil-gravacoes-dashboard`, no mesmo repositório e região da API. Como a API usa o plano gratuito do Render, a dashboard acessa a URL HTTPS pública definida em `API_URL`; serviços gratuitos não recebem conexões pela rede privada. Depois da primeira sincronização:
+O `render.yaml` ainda declara um serviço independente da dashboard para desenvolvimento e compatibilidade. A versão de produção é servida pelo frontend Vercel, no mesmo domínio da aplicação. A API continua no Render; como ela usa o plano gratuito, o acesso da dashboard isolada usa a URL HTTPS pública definida em `API_URL`. Depois da primeira sincronização:
 
 - No serviço da API, mantenha `BETTER_AUTH_URL` apontando para o site público e inclua as origens exatas do site e da dashboard em `FRONTEND_ORIGINS`, separadas por vírgula.
-- No serviço da dashboard, confirme se `API_URL` aponta para a origem HTTPS pública da API.
-- Na Vercel, configure `NEXT_PUBLIC_DASHBOARD_URL` com a URL HTTPS pública do serviço da dashboard.
+- Para a dashboard integrada na Vercel, mantenha `NEXT_PUBLIC_API_URL` apontando para a origem HTTPS pública da API.
+- No serviço isolado da dashboard no Render, confirme se `API_URL` aponta para a origem HTTPS pública da API.
 - No serviço da API do Render, configure os quatro valores `CLOUDFLARE_R2_ACCOUNT_ID`, `CLOUDFLARE_R2_ACCESS_KEY_ID`, `CLOUDFLARE_R2_SECRET_ACCESS_KEY` e `CLOUDFLARE_R2_BUCKET`. O binário do arquivo só fica pronto depois que as partes e o objeto final forem confirmados no R2.
 - Confira se `MONGODB_URI` começa exatamente com `mongodb+srv://` ou `mongodb://`; não inclua aspas externas. Uma URI malformada impede o health check e o deploy da API.
 

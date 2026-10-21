@@ -38,7 +38,16 @@ const nextConfig: NextConfig = {
       });
     }
 
-    return [{ source: "/:path*", headers: securityHeaders }];
+    const noIndexHeaders = [
+      { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
+    ];
+
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      { source: "/admin", headers: noIndexHeaders },
+      { source: "/dashboard", headers: noIndexHeaders },
+      { source: "/dashboard/:path*", headers: noIndexHeaders },
+    ];
   },
 };
 

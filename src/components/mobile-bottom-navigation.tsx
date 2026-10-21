@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { AnimatePresence } from "motion/react";
 import { FaHome, FaTags, FaUser, FaWhatsapp } from "react-icons/fa";
 import { AccountMenu } from "@/components/account-menu";
@@ -20,6 +21,7 @@ type MobileBottomNavigationProps = {
 
 /** Exibe os atalhos globais e abre o menu de conta na navegação mobile. */
 export function MobileBottomNavigation({ user = null }: MobileBottomNavigationProps) {
+  const pathname = usePathname();
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const { data: session } = authClient.useSession();
   const accountUser: AccountUser | null = session?.user
@@ -30,6 +32,8 @@ export function MobileBottomNavigation({ user = null }: MobileBottomNavigationPr
         recentOrders: [],
       }
     : user;
+
+  if (pathname === "/admin" || pathname.startsWith("/dashboard")) return null;
 
   return (
     <>

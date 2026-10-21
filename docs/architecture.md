@@ -26,7 +26,7 @@ As coleções e índices são inicializados pela API no primeiro uso. Compatibil
 
 O Blueprint em [render.yaml](../render.yaml) mantém os serviços da API e da dashboard na raiz do repositório porque o lockfile e os npm workspaces são compartilhados. A API executa `npm ci && npm run api:build`, inicia com `npm run api:start` e verifica `/api/health`. A dashboard usa `npm run dashboard:build` e `npm run dashboard:start`.
 
-A Vercel publica o frontend pela raiz, usando `npm run build`. A variável `NEXT_PUBLIC_API_URL` aponta para a URL-base pública da API e configura o destino dos rewrites de `/api/*`; `NEXT_PUBLIC_DASHBOARD_URL` informa o destino do atalho `/admin`. No Render, `FRONTEND_ORIGINS` contém as origens exatas do frontend e da dashboard, e `BETTER_AUTH_URL` aponta para a origem pública do frontend, incluindo em desenvolvimento (`http://localhost:3000`).
+A Vercel publica o frontend pela raiz, usando `npm run build`; a dashboard administrativa fica no mesmo domínio em `/admin` e `/dashboard`. A variável `NEXT_PUBLIC_API_URL` aponta para a URL-base pública da API e configura o destino dos rewrites de `/api/*`. No Render, `FRONTEND_ORIGINS` contém as origens exatas autorizadas e `BETTER_AUTH_URL` aponta para a origem pública do frontend, incluindo em desenvolvimento (`http://localhost:3000`).
 
 ## Sessões entre domínios
 
